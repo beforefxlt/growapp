@@ -9,7 +9,7 @@
         <el-descriptions :column="3" border>
           <el-descriptions-item label="姓名">{{ currentChild.name }}</el-descriptions-item>
           <el-descriptions-item label="性别">{{ currentChild.gender === 'male' ? '男' : '女' }}</el-descriptions-item>
-          <el-descriptions-item label="出生日期">{{ currentChild.birthDate }}</el-descriptions-item>
+          <!-- <el-descriptions-item label="出生日期">{{ currentChild.birthDate }}</el-descriptions-item> -->
         </el-descriptions>
       </div>
 
@@ -75,7 +75,13 @@ const updateChart = () => {
     },
     xAxis: {
       type: 'time',
-      name: '日期'
+      name: '日期',
+      axisLabel: {
+        formatter: function (value) {
+          const date = new Date(value);
+          return date.toLocaleDateString();
+        }
+      }
     },
     yAxis: {
       type: 'value',
