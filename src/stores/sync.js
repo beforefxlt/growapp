@@ -9,20 +9,30 @@ export const useSyncStore = defineStore('sync', {
       const childrenStore = useChildrenStore()
       const recordsStore = useRecordsStore()
 
+      console.log('childId:', childId);
       const child = childrenStore.children.find(c => c.id === childId)
-      if (!child) return null
+      if (!child) { 
+        console.log('child:', child); 
+        return null 
+      }
 
+      // 检查 recordsStore.getChildRecords 返回值
       const records = recordsStore.getChildRecords(childId)
-      
+      console.log('records:', records); // 添加调试信息
+
       const syncData = {
         version: '1.0',
         timestamp: new Date().toISOString(),
         child: child,
         records: records
       }
+      console.log('syncData:', syncData); // 移动调试信息到对象定义之后
 
-      // 转换为Base64编码
-      return btoa(JSON.stringify(syncData))
+      // 转换为Base64编码，支持非ASCII字符
+      const syncDataString = JSON.stringify(syncData);
+      const syncCode = btoa(encodeURIComponent(syncDataString));
+      console.log('syncCode:', syncCode);
+      return syncCode;
     },
 
     // 导入同步数据
@@ -80,4 +90,4 @@ export const useSyncStore = defineStore('sync', {
       }
     }
   }
-}) 
+})

@@ -230,6 +230,8 @@ const saveChild = () => {
 }
 
 const handleSync = () => {
+  console.log('selectedChildId.value:', selectedChildId.value);
+  console.log('selectedChildId.value:', selectedChildId.value);
   if (!selectedChildId.value) {
     ElMessage.warning('请选择要同步的儿童')
     return
