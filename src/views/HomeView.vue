@@ -79,7 +79,11 @@ const updateChart = () => {
   const records = recordsStore.getChildRecords(currentChild.value.id)
   const data = records.map(record => ({
     value: [record.date, record[chartType.value]],
-    itemStyle: { color: '#409EFF' }
+    itemStyle: { 
+      color: '#807CA5',
+      borderWidth: 2,
+      borderColor: '#FFFFFF'
+    }
   }))
 
   const option = {
@@ -91,6 +95,12 @@ const updateChart = () => {
         const month = String(date.getMonth() + 1).padStart(2, '0')
         const day = String(date.getDate()).padStart(2, '0')
         return `${year}年${month}月${day}日<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
+      },
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#807CA5',
+      borderWidth: 1,
+      textStyle: {
+        color: '#2F2F38'
       }
     },
     grid: {
@@ -111,7 +121,20 @@ const updateChart = () => {
         },
         interval: 0,
         rotate: 45,
-        margin: 16
+        margin: 16,
+        color: '#626270'
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#ECE7F0'
+        }
+      },
+      splitLine: {
+        show: true,
+        lineStyle: {
+          color: '#F4F5F7',
+          type: 'dashed'
+        }
       }
     },
     yAxis: {
@@ -119,12 +142,19 @@ const updateChart = () => {
       position: 'left',
       axisLabel: {
         margin: 16,
+        color: '#626270',
         formatter: function(value) {
           return value + (chartType.value === 'height' ? 'cm' : 'kg');
         }
       },
+      axisLine: {
+        lineStyle: {
+          color: '#ECE7F0'
+        }
+      },
       splitLine: {
         lineStyle: {
+          color: '#F4F5F7',
           type: 'dashed'
         }
       }
@@ -135,10 +165,42 @@ const updateChart = () => {
       data: data,
       symbolSize: 8,
       itemStyle: {
-        color: '#409EFF'
+        color: '#807CA5',
+        borderWidth: 2,
+        borderColor: '#FFFFFF'
       },
       lineStyle: {
-        width: 2
+        width: 3,
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [{
+            offset: 0,
+            color: '#807CA5'
+          }, {
+            offset: 1,
+            color: '#9DA0C5'
+          }]
+        }
+      },
+      areaStyle: {
+        color: {
+          type: 'linear',
+          x: 0,
+          y: 0,
+          x2: 0,
+          y2: 1,
+          colorStops: [{
+            offset: 0,
+            color: 'rgba(128, 124, 165, 0.2)'
+          }, {
+            offset: 1,
+            color: 'rgba(157, 160, 197, 0.05)'
+          }]
+        }
       }
     }]
   }
@@ -162,6 +224,8 @@ watch([chartType, currentChild], updateChart)
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
+  background-color: #F6F6FB;
+  min-height: 100vh;
 }
 
 .child-info {
@@ -169,14 +233,17 @@ watch([chartType, currentChild], updateChart)
   padding: 0 10px;
   width: 100%;
   box-sizing: border-box;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
 }
 
 .chart-container {
-  background: #fff;
+  background: #FFFFFF;
   padding: 0;
   margin: 10px 0 0 0;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
   width: 100%;
   box-sizing: border-box;
 }
@@ -186,7 +253,7 @@ watch([chartType, currentChild], updateChart)
   justify-content: space-between;
   align-items: center;
   margin: 0 0 10px 0;
-  padding: 0 10px;
+  padding: 10px;
   width: 100%;
   box-sizing: border-box;
 }
@@ -201,44 +268,75 @@ watch([chartType, currentChild], updateChart)
 }
 
 :deep(.el-descriptions) {
-  padding: 0;
+  padding: 10px;
   margin: 0;
   width: 100%;
+  
+  .el-descriptions__title {
+    color: #2F2F38;
+    font-weight: 500;
+  }
+  
+  .el-descriptions__label {
+    color: #626270;
+  }
+  
+  .el-descriptions__content {
+    color: #2F2F38;
+  }
 }
 
-:deep(.el-descriptions__body) {
-  background-color: transparent;
-  padding: 0;
-  margin: 0;
-  width: 100%;
-}
-
-:deep(.el-descriptions__table) {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  border-collapse: collapse;
-}
-
-:deep(.el-descriptions__cell) {
-  padding: 8px !important;
-}
-
-:deep(.el-descriptions__label) {
-  margin: 0;
-  padding: 8px !important;
-}
-
-:deep(.el-descriptions__content) {
-  margin: 0;
-  padding: 8px !important;
-}
-
-:deep(.el-table__cell) {
-  padding: 8px !important;
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+  border: none;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
+  }
+  
+  &.is-plain {
+    background: #FFFFFF;
+    border: 1px solid #807CA5;
+    color: #807CA5;
+    
+    &:hover {
+      background: #F4F5F7;
+      color: #9DA0C5;
+      border-color: #9DA0C5;
+    }
+  }
 }
 
 :deep(.el-select) {
   width: 120px;
+  
+  .el-input__wrapper {
+    background-color: #F4F5F7;
+    border: 1px solid transparent;
+    
+    &:hover {
+      border-color: #9DA0C5;
+    }
+    
+    &.is-focus {
+      border-color: #807CA5;
+      box-shadow: 0 0 0 1px #807CA5;
+    }
+  }
+}
+
+/* 修改图表的默认配色 */
+:deep(.echarts) {
+  .line-chart {
+    color: #807CA5;
+  }
+  
+  .grid-line {
+    stroke: #F4F5F7;
+  }
 }
 </style>
