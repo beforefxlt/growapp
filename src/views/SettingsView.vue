@@ -1,7 +1,7 @@
 <template>
   <div class="settings-container">
     <div class="settings-header">
-      <h2>儿童信息管理</h2>
+      <h2 class="center-title">儿童信息管理</h2>
       <div class="header-buttons">
         <el-button type="primary" @click="showSyncDialog = true">
           <el-icon><Share /></el-icon>同步数据
@@ -229,20 +229,27 @@ const saveChild = () => {
   resetForm()
 }
 
-const handleSync = () => {
-  console.log('selectedChildId.value:', selectedChildId.value);
-  console.log('selectedChildId.value:', selectedChildId.value);
+const handleSync = async () => {
+  console.log('开始生成同步码，选中的儿童ID:', selectedChildId.value);
+  
   if (!selectedChildId.value) {
-    ElMessage.warning('请选择要同步的儿童')
-    return
+    ElMessage.warning('请选择要同步的儿童');
+    return;
   }
   
-  const code = syncStore.generateSyncData(selectedChildId.value)
-  if (code) {
-    syncCode.value = code
-    showSyncDialog.value = true
-  } else {
-    ElMessage.error('生成同步码失败')
+  try {
+    const code = syncStore.generateSyncData(selectedChildId.value);
+    console.log('生成的同步码:', code);
+    
+    if (code) {
+      syncCode.value = code;
+      ElMessage.success('同步码生成成功');
+    } else {
+      ElMessage.error('生成同步码失败');
+    }
+  } catch (error) {
+    console.error('生成同步码出错:', error);
+    ElMessage.error('生成同步码时发生错误：' + error.message);
   }
 }
 
@@ -316,7 +323,7 @@ const copySyncCode = async () => {
 
 .settings-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
   margin-bottom: 20px;
   padding: 10px;
@@ -325,10 +332,17 @@ const copySyncCode = async () => {
   box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
 }
 
-.settings-header h2 {
+.center-title {
   margin: 0;
   color: #fff;
   font-weight: 500;
+  text-align: center;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .child-card {
@@ -349,60 +363,61 @@ const copySyncCode = async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  
-  .el-button + .el-button {
-    margin-left: 0;
-  }
+}
+
+.button-group :deep(.el-button) + :deep(.el-button) {
+  margin-left: 0;
 }
 
 :deep(.el-button.is-link) {
   background: none;
   border: none;
   padding: 4px 8px;
-  
-  &.el-button--primary {
-    margin-left: 8px;
-    color: #807CA5;
-    &:hover {
-      color: #9DA0C5;
-    }
-  }
-  
-  &.el-button--danger {
-    color: #F56C6C;
-    &:hover {
-      color: #FF7C7C;
-    }
-  }
 }
 
-:deep(.child-dialog) {
-  .el-dialog {
-    max-width: 360px;
-    margin: 0 auto;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  .el-dialog__header {
-    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
-    padding: 15px 20px;
-    margin-right: 0;
-    .el-dialog__title {
-      color: #fff;
-      font-size: 16px;
-      font-weight: 500;
-    }
-  }
+:deep(.el-button--primary.is-link) {
+  margin-left: 8px;
+  color: #807CA5;
+}
 
-  .el-dialog__body {
-    padding: 20px;
-  }
+:deep(.el-button--primary.is-link:hover) {
+  color: #9DA0C5;
+}
 
-  .el-form-item__label {
-    color: #626270;
-    font-weight: 500;
-  }
+:deep(.el-button--danger.is-link) {
+  color: #F56C6C;
+}
+
+:deep(.el-button--danger.is-link:hover) {
+  color: #FF7C7C;
+}
+
+:deep(.child-dialog .el-dialog) {
+  max-width: 360px;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.child-dialog .el-dialog__header) {
+  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+  padding: 15px 20px;
+  margin-right: 0;
+}
+
+:deep(.child-dialog .el-dialog__title) {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+:deep(.child-dialog .el-dialog__body) {
+  padding: 20px;
+}
+
+:deep(.child-dialog .el-form-item__label) {
+  color: #626270;
+  font-weight: 500;
 }
 
 :deep(.el-button--primary) {
@@ -410,59 +425,56 @@ const copySyncCode = async () => {
   border: none;
   padding: 8px 16px;
   transition: all 0.3s ease;
-  
-  &:hover {
-    background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
-  }
+}
 
-  &.is-plain {
-    background: #fff;
-    border: 1px solid #807CA5;
-    color: #807CA5;
-    &:hover {
-      background: #F4F5F7;
-      color: #9DA0C5;
-      border-color: #9DA0C5;
-    }
-  }
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
+}
+
+:deep(.el-button--primary.is-plain) {
+  background: #fff;
+  border: 1px solid #807CA5;
+  color: #807CA5;
+}
+
+:deep(.el-button--primary.is-plain:hover) {
+  background: #F4F5F7;
+  color: #9DA0C5;
+  border-color: #9DA0C5;
 }
 
 :deep(.el-button--default) {
   border: 1px solid #dcdfe6;
-  &:hover {
-    border-color: #807CA5;
-    color: #807CA5;
-  }
+}
+
+:deep(.el-button--default:hover) {
+  border-color: #807CA5;
+  color: #807CA5;
 }
 
 :deep(.el-card) {
   border-radius: 8px;
   border: none;
-  
-  .el-card__header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #ebeef5;
-    background: #F4F5F7;
-  }
+}
+
+:deep(.el-card .el-card__header) {
+  padding: 15px 20px;
+  border-bottom: 1px solid #ebeef5;
+  background: #F4F5F7;
 }
 
 :deep(.el-descriptions) {
   padding: 15px;
-  
-  .el-descriptions__label {
-    color: #626270;
-  }
-  
-  .el-descriptions__content {
-    color: #2F2F38;
-  }
 }
 
-.header-buttons {
-  display: flex;
-  gap: 10px;
+:deep(.el-descriptions .el-descriptions__label) {
+  color: #626270;
+}
+
+:deep(.el-descriptions .el-descriptions__content) {
+  color: #2F2F38;
 }
 
 .sync-code-input {
@@ -495,43 +507,42 @@ const copySyncCode = async () => {
   line-height: 1.4;
 }
 
-.sync-dialog {
-  :deep(.el-dialog) {
-    max-width: 360px;
-    margin: 0 auto;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  :deep(.el-dialog__header) {
-    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
-    padding: 15px 20px;
-    margin-right: 0;
-    .el-dialog__title {
-      color: #fff;
-      font-size: 16px;
-      font-weight: 500;
-    }
-  }
+:deep(.sync-dialog .el-dialog) {
+  max-width: 360px;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+}
 
-  :deep(.el-dialog__body) {
-    padding: 20px;
-  }
+:deep(.sync-dialog .el-dialog__header) {
+  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+  padding: 15px 20px;
+  margin-right: 0;
+}
 
-  :deep(.el-form-item__label) {
-    padding-bottom: 4px;
-  }
-  
-  :deep(.el-input__wrapper) {
-    max-width: 100%;
-  }
-  
-  :deep(.el-textarea__inner) {
-    font-family: monospace;
-    font-size: 14px;
-    word-break: break-all;
-    white-space: pre-wrap;
-  }
+:deep(.sync-dialog .el-dialog__title) {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+:deep(.sync-dialog .el-dialog__body) {
+  padding: 20px;
+}
+
+:deep(.sync-dialog .el-form-item__label) {
+  padding-bottom: 4px;
+}
+
+:deep(.sync-dialog .el-input__wrapper) {
+  max-width: 100%;
+}
+
+:deep(.sync-dialog .el-textarea__inner) {
+  font-family: monospace;
+  font-size: 14px;
+  word-break: break-all;
+  white-space: pre-wrap;
 }
 
 .sync-actions {
@@ -539,12 +550,12 @@ const copySyncCode = async () => {
   flex-direction: column;
   gap: 10px;
   margin-top: 16px;
-  
-  .el-button {
-    width: 100%;
-    margin-left: 0;
-    justify-content: center;
-  }
+}
+
+.sync-actions :deep(.el-button) {
+  width: 100%;
+  margin-left: 0;
+  justify-content: center;
 }
 
 :deep(.el-button--success) {
@@ -552,22 +563,23 @@ const copySyncCode = async () => {
   border: none;
   padding: 8px 16px;
   transition: all 0.3s ease;
-  
-  &:hover {
-    background: linear-gradient(135deg, #85CE61 0%, #95D475 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
-  }
+}
 
-  &.is-disabled {
-    background: #b3e19d;
-    border-color: #b3e19d;
-    &:hover {
-      background: #b3e19d;
-      border-color: #b3e19d;
-      transform: none;
-      box-shadow: none;
-    }
-  }
+:deep(.el-button--success:hover) {
+  background: linear-gradient(135deg, #85CE61 0%, #95D475 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
+}
+
+:deep(.el-button--success.is-disabled) {
+  background: #b3e19d;
+  border-color: #b3e19d;
+}
+
+:deep(.el-button--success.is-disabled:hover) {
+  background: #b3e19d;
+  border-color: #b3e19d;
+  transform: none;
+  box-shadow: none;
 }
 </style>

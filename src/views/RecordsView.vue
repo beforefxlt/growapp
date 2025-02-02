@@ -45,17 +45,9 @@
         <el-button type="primary" plain @click="exportToCsv">
           <el-icon><Download /></el-icon>导出CSV
         </el-button>
-        <el-upload
-          action=""
-          :auto-upload="false"
-          :show-file-list="false"
-          accept=".csv"
-          @change="handleFileChange"
-        >
-          <el-button type="primary" plain>
-            <el-icon><Upload /></el-icon>导入CSV
-          </el-button>
-        </el-upload>
+        <el-button type="primary" plain @click="importCsv">
+          <el-icon><Upload /></el-icon>导入CSV
+        </el-button>
       </div>
 
       <el-dialog
@@ -110,6 +102,12 @@ import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
 import { Plus, Edit, Delete, Download, Upload } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
+import { Capacitor, registerPlugin } from '@capacitor/core'
+import { formatDate } from '../utils/dateFormat'
+
+// 注册FilePlugin
+const FilePlugin = registerPlugin('GrowAppFilePlugin');
 
 const router = useRouter()
 const childrenStore = useChildrenStore()
@@ -169,92 +167,383 @@ const saveRecord = () => {
   resetForm()
 }
 
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}年${month}月${day}日 ${hours}:${minutes}`
+const formatDateForFileName = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}${month}${day}_${hours}${minutes}`;
 }
 
-const exportToCsv = () => {
-  if (!currentChild.value || !sortedRecords.value.length) {
-    ElMessage.warning('没有可导出的记录')
-    return
+const checkAndRequestPermissions = async () => {
+  if (Capacitor.getPlatform() !== 'android') {
+    return true;
   }
 
-  // 准备CSV内容
-  const headers = ['日期', '身高(cm)', '体重(kg)']
-  const rows = sortedRecords.value.map(record => [
-    formatDate(record.date),
-    record.height,
-    record.weight
-  ])
-  
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n')
+  try {
+    console.log('FilePlugin:', FilePlugin);
+    console.log('开始权限检查流程');
 
-  // 创建Blob对象
-  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  
-  // 创建下载链接
-  const link = document.createElement('a')
-  link.setAttribute('href', url)
-  link.setAttribute('download', `${currentChild.value.name}_生长记录.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
+    // 显示权限说明
+    await ElMessageBox.confirm(
+      '导出功能需要访问存储空间权限，以保存CSV文件。\n\n' +
+      '请在接下来的系统对话框中点击"允许"。',
+      '需要权限',
+      {
+        confirmButtonText: '继续',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    );
 
-const handleFileChange = (file) => {
-  if (!file) return
+    console.log('用户同意继续，开始检查权限');
 
-  const reader = new FileReader()
-  reader.onload = (e) => {
     try {
-      const text = e.target.result
-      const rows = text.split('\n').map(row => row.trim()).filter(row => row)
+      // 检查权限
+      const permResult = await FilePlugin.checkPermissions();
+      console.log('权限检查结果:', permResult);
       
-      // 跳过标题行
-      const records = rows.slice(1).map(row => {
-        const [dateStr, height, weight] = row.split(',')
-        
-        // 解析日期
-        const date = new Date(dateStr)
-        if (isNaN(date.getTime())) {
-          throw new Error('日期格式不正确')
-        }
+      if (permResult.granted) {
+        console.log('已有权限，可以继续');
+        return true;
+      }
 
-        // 验证数据
-        const heightNum = parseFloat(height)
-        const weightNum = parseFloat(weight)
-        if (isNaN(heightNum) || isNaN(weightNum)) {
-          throw new Error('身高或体重格式不正确')
-        }
-
-        return {
-          date: date.toISOString().slice(0, 16),
-          height: heightNum,
-          weight: weightNum
-        }
-      })
-
-      // 添加记录
-      records.forEach(record => {
-        recordsStore.addRecord(currentChild.value.id, record)
-      })
-
-      ElMessage.success(`成功导入 ${records.length} 条记录`)
+      console.log('没有权限，开始请求');
+      // 请求权限
+      const result = await FilePlugin.requestPermissions();
+      console.log('权限请求结果:', result);
+      
+      if (!result.granted) {
+        console.log('用户拒绝了权限请求');
+        ElMessage.error('需要存储权限才能导出文件。请在设置中手动开启权限。');
+        return false;
+      }
+      
+      console.log('用户同意了权限请求');
+      return result.granted;
     } catch (error) {
-      ElMessage.error('导入失败：' + error.message)
+      console.error('权限操作失败:', error);
+      throw error;
     }
+  } catch (error) {
+    console.error('权限请求失败:', error);
+    if (error.message !== 'cancel') {
+      ElMessage.error('权限请求失败: ' + error.message);
+    }
+    return false;
   }
-  reader.readAsText(file.raw)
+}
+
+const exportToCsv = async () => {
+  try {
+    console.log('开始导出CSV');
+    
+    if (!currentChild.value || !sortedRecords.value.length) {
+      ElMessage.warning('没有可导出的记录');
+      return;
+    }
+
+    // 检查权限
+    const permissionGranted = await checkAndRequestPermissions();
+    if (!permissionGranted) {
+      return;
+    }
+
+    // 准备CSV内容
+    const headers = ['日期', '身高(cm)', '体重(kg)'];
+    const rows = sortedRecords.value.map(record => [
+      formatDate(record.date),
+      record.height,
+      record.weight
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    console.log('生成的CSV内容:', csvContent);
+    console.log('生成的CSV内容长度:', csvContent.length);
+
+    const fileName = `${currentChild.value.name}_生长记录_${formatDateForFileName(new Date())}.csv`;
+
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        // 使用文件选择器保存文件
+        const result = await FilePlugin.saveFile({
+          content: csvContent,
+          fileName: fileName,
+          mimeType: 'text/csv',
+          childName: currentChild.value.name
+        });
+
+        console.log('文件保存结果:', result);
+        ElMessage.success('文件保存成功');
+      } catch (error) {
+        console.error('保存文件失败:', error);
+        if (error.message === 'User cancelled file save') {
+          ElMessage.info('已取消保存');
+        } else {
+          ElMessage.error('保存文件失败: ' + error.message);
+        }
+      }
+    } else {
+      // 非Android平台使用浏览器下载
+      // 添加 BOM 头，确保中文正确显示
+      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      const blob = new Blob([bom, csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      ElMessage.success('文件导出成功');
+    }
+  } catch (error) {
+    console.error('导出CSV时出错:', error);
+    ElMessage.error('导出失败：' + error.message);
+  }
+}
+
+// 新增导入CSV函数
+const importCsv = async () => {
+  try {
+    console.log('开始导入CSV流程');
+    
+    if (Capacitor.getPlatform() === 'android') {
+      console.log('在Android平台上执行导入');
+      
+      // 检查权限
+      const permissionGranted = await checkAndRequestPermissions();
+      if (!permissionGranted) {
+        console.log('未获得权限，终止导入');
+        return;
+      }
+
+      try {
+        console.log('调用FilePlugin.pickFile');
+        // 使用FilePlugin选择文件
+        const result = await FilePlugin.pickFile({
+          type: 'text/csv',
+          title: '选择CSV文件'
+        });
+
+        console.log('文件选择结果:', result);
+
+        if (!result || !result.path) {
+          console.log('没有选择文件或文件路径为空');
+          return;
+        }
+
+        // 读取文件内容
+        console.log('开始读取文件内容:', result.path);
+        const fileContent = await FilePlugin.readFile({
+          path: result.path,
+          encoding: 'utf8'
+        });
+
+        console.log('文件读取结果:', fileContent);
+        console.log('文件内容:', fileContent.content);
+
+        if (!fileContent || !fileContent.content) {
+          throw new Error('无法读取文件内容');
+        }
+
+        // 验证文件名格式
+        const fileName = result.name;
+        console.log('处理文件:', fileName);
+        
+        let childName, importTimestamp;
+
+        // 尝试从文件名中提取信息
+        const fileNamePattern = /^(.+)_生长记录_(\d{8}_\d{4})\.csv$/;
+        const match = fileName.match(fileNamePattern);
+
+        if (!match) {
+          console.log('文件名格式不匹配标准格式');
+          // 如果文件名不匹配标准格式，直接处理文件内容
+          console.log('直接处理文件内容');
+          await processFileContent(fileContent.content.split('\n'));
+          return;
+        }
+
+        childName = match[1];
+        importTimestamp = match[2];
+        console.log('解析的儿童姓名:', childName);
+        console.log('解析的时间戳:', importTimestamp);
+
+        // 确认导入
+        try {
+          await ElMessageBox.confirm(
+            `确认要导入 ${childName} 的生长记录数据吗？\n导出时间：${formatImportTimestamp(importTimestamp)}`,
+            '确认导入',
+            {
+              confirmButtonText: '确定导入',
+              cancelButtonText: '取消',
+              type: 'warning'
+            }
+          );
+          // 用户确认导入
+          console.log('用户确认导入，开始处理文件内容');
+          await processFileContent(fileContent.content.split('\n'), childName);
+        } catch (err) {
+          console.log('用户取消导入:', err);
+          ElMessage.info('已取消导入');
+        }
+      } catch (error) {
+        console.error('文件操作失败:', error);
+        if (error.message === 'User cancelled file save') {
+          ElMessage.info('已取消导入');
+        } else {
+          ElMessage.error('文件操作失败：' + error.message);
+        }
+      }
+    } else {
+      // 非Android平台使用input元素选择文件
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+
+      input.onchange = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const content = e.target.result;
+          const fileName = file.name;
+          let childName, importTimestamp;
+
+          const fileNamePattern = /^(.+)_生长记录_(\d{8}_\d{4})\.csv$/;
+          const match = fileName.match(fileNamePattern);
+
+          if (!match) {
+            try {
+              await ElMessageBox.confirm(
+                '文件名格式不是标准的导出格式（姓名_生长记录_日期.csv），是否仍要尝试导入？',
+                '文件格式提示',
+                {
+                  confirmButtonText: '继续导入',
+                  cancelButtonText: '取消',
+                  type: 'warning'
+                }
+              );
+              await processFileContent(content.split('\n'));
+            } catch (err) {
+              ElMessage.info('已取消导入');
+            }
+            return;
+          }
+
+          childName = match[1];
+          importTimestamp = match[2];
+
+          try {
+            await ElMessageBox.confirm(
+              `确认要导入 ${childName} 的生长记录数据吗？\n导出时间：${formatImportTimestamp(importTimestamp)}`,
+              '确认导入',
+              {
+                confirmButtonText: '确定导入',
+                cancelButtonText: '取消',
+                type: 'warning'
+              }
+            );
+            await processFileContent(content.split('\n'), childName);
+          } catch (err) {
+            ElMessage.info('已取消导入');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      input.click();
+      document.body.removeChild(input);
+    }
+  } catch (error) {
+    console.error('导入CSV时出错:', error);
+    ElMessage.error('导入失败：' + error.message);
+  }
+};
+
+// 新增处理文件内容的函数
+const processFileContent = async (rows, fileNameChildName) => {
+  try {
+    console.log('开始处理文件内容，总行数:', rows.length);
+    
+    // 第一行必须是儿童姓名
+    const nameRow = rows[0].trim();
+    const childName = nameRow.replace('儿童姓名:', '').trim();
+    
+    // 第二行必须是标准标题
+    const titleRow = rows[1].trim().split(',');
+    if (titleRow.join(',') !== '日期,身高(cm),体重(kg)') {
+      throw new Error('文件格式错误：标题行必须为"日期,身高(cm),体重(kg)"');
+    }
+
+    // 处理数据行
+    const dataRows = rows.slice(2).filter(row => row.trim());
+    const records = dataRows.map(row => {
+      const [dateStr, height, weight] = row.split(',').map(item => item.trim());
+      return {
+        date: new Date(dateStr).toISOString().slice(0, 16),
+        height: parseFloat(height),
+        weight: parseFloat(weight)
+      };
+    });
+
+    // 检查是否存在该儿童
+    const childrenStore = useChildrenStore();
+    let targetChildId = null;
+    const existingChild = childrenStore.children.find(c => c.name === childName);
+    
+    if (!existingChild) {
+      const newChild = {
+        id: Date.now().toString(),
+        name: childName,
+        createdAt: new Date().toISOString()
+      };
+      childrenStore.addChild(newChild);
+      targetChildId = newChild.id;
+      ElMessage.success(`已创建新的儿童档案：${childName}`);
+    } else {
+      targetChildId = existingChild.id;
+    }
+
+    // 添加记录
+    let addedCount = 0;
+    records.forEach(record => {
+      recordsStore.addRecord(targetChildId, record);
+      addedCount++;
+    });
+
+    ElMessage.success(`导入成功：新增${addedCount}条记录`);
+    
+    // 如果当前没有选中儿童，自动选中导入的儿童
+    if (!currentChild.value) {
+      childrenStore.setCurrentChild(targetChildId);
+    }
+  } catch (error) {
+    console.error('处理文件内容错误:', error);
+    throw error;
+  }
+};
+
+// 格式化导入时间戳
+const formatImportTimestamp = (timestamp) => {
+  const year = timestamp.slice(0, 4)
+  const month = timestamp.slice(4, 6)
+  const day = timestamp.slice(6, 8)
+  const hour = timestamp.slice(9, 11)
+  const minute = timestamp.slice(11, 13)
+  return `${year}年${month}月${day}日 ${hour}:${minute}`
 }
 </script>
 
