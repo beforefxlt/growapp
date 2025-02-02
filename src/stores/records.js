@@ -13,10 +13,39 @@ export const useRecordsStore = defineStore('records', {
   },
 
   actions: {
+    // 检查是否存在同一时间的记录
+    hasRecordAtTime(childId, date) {
+      const records = this.records[childId] || []
+      const dateObj = new Date(date)
+      const dateKey = `${dateObj.getFullYear()}-${
+        String(dateObj.getMonth() + 1).padStart(2, '0')}-${
+        String(dateObj.getDate()).padStart(2, '0')} ${
+        String(dateObj.getHours()).padStart(2, '0')}`
+      
+      return records.find(r => {
+        const recordDateObj = new Date(r.date)
+        const recordDateKey = `${recordDateObj.getFullYear()}-${
+          String(recordDateObj.getMonth() + 1).padStart(2, '0')}-${
+          String(recordDateObj.getDate()).padStart(2, '0')} ${
+          String(recordDateObj.getHours()).padStart(2, '0')}`
+        return recordDateKey === dateKey
+      })
+    },
+
     addRecord(childId, record) {
       if (!this.records[childId]) {
         this.records[childId] = []
       }
+
+      // 检查是否存在同一时间的记录
+      const existingRecord = this.hasRecordAtTime(childId, record.date)
+      if (existingRecord) {
+        // 如果存在，更新现有记录
+        this.updateRecord(childId, existingRecord.id, record)
+        return
+      }
+
+      // 如果不存在，添加新记录
       const id = Date.now().toString()
       this.records[childId].push({
         ...record,
