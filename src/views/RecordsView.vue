@@ -47,8 +47,10 @@
           <el-form-item label="日期">
             <el-date-picker
               v-model="form.date"
-              type="date"
-              placeholder="选择日期"
+              type="datetime"
+              placeholder="选择日期和时间"
+              format="YYYY年MM月DD日 HH:mm"
+              value-format="YYYY-MM-DD HH:mm:00"
               style="width: 100%"
             />
           </el-form-item>
@@ -100,7 +102,7 @@ const isEditing = ref(false)
 const editingRecordId = ref(null)
 
 const form = ref({
-  date: new Date(),
+  date: new Date().toISOString().slice(0, 16),  // 格式化到分钟
   height: null,
   weight: null
 })
@@ -113,7 +115,7 @@ const sortedRecords = computed(() => {
 
 const resetForm = () => {
   form.value = {
-    date: new Date(),
+    date: new Date().toISOString().slice(0, 16),
     height: null,
     weight: null
   }
@@ -151,7 +153,9 @@ const formatDate = (dateStr) => {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
-  return `${year}年${month}月${day}日`
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}年${month}月${day}日 ${hours}:${minutes}`
 }
 </script>
 
