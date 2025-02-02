@@ -128,7 +128,31 @@ const form = ref({
 
 const sortedRecords = computed(() => {
   if (!currentChild.value) return []
-  return [...recordsStore.getChildRecords(currentChild.value.id)]
+  
+  // 获取所有记录并按创建时间排序
+  const records = [...recordsStore.getChildRecords(currentChild.value.id)]
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // 先按创建时间排序，保证最新的记录优先处理
+  
+  // 使用Map进行去重，以日期时间（精确到小时）为key
+  const uniqueRecords = new Map()
+  
+  // 遍历排序后的记录（最新的记录会先被处理）
+  records.forEach(record => {
+    // 将日期时间格式化到小时
+    const dateObj = new Date(record.date)
+    const dateKey = `${dateObj.getFullYear()}-${
+      String(dateObj.getMonth() + 1).padStart(2, '0')}-${
+      String(dateObj.getDate()).padStart(2, '0')} ${
+      String(dateObj.getHours()).padStart(2, '0')}`
+    
+    // 由于已经按创建时间排序，如果key不存在，就是最新的记录
+    if (!uniqueRecords.has(dateKey)) {
+      uniqueRecords.set(dateKey, record)
+    }
+  })
+  
+  // 转换回数组并按记录时间排序
+  return Array.from(uniqueRecords.values())
     .sort((a, b) => new Date(b.date) - new Date(a.date))
 })
 
@@ -158,13 +182,52 @@ const deleteRecord = (record) => {
 }
 
 const saveRecord = () => {
-  if (isEditing.value) {
-    recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, form.value)
+  // 将表单日期格式化到小时
+  const formDateObj = new Date(form.value.date)
+  const formDateKey = `${formDateObj.getFullYear()}-${
+    String(formDateObj.getMonth() + 1).padStart(2, '0')}-${
+    String(formDateObj.getDate()).padStart(2, '0')} ${
+    String(formDateObj.getHours()).padStart(2, '0')}`
+
+  const existingRecords = recordsStore.getChildRecords(currentChild.value.id)
+  const sameTimeRecord = existingRecords.find(r => {
+    const recordDateObj = new Date(r.date)
+    const recordDateKey = `${recordDateObj.getFullYear()}-${
+      String(recordDateObj.getMonth() + 1).padStart(2, '0')}-${
+      String(recordDateObj.getDate()).padStart(2, '0')} ${
+      String(recordDateObj.getHours()).padStart(2, '0')}`
+    return recordDateKey === formDateKey
+  })
+
+  if (sameTimeRecord && !isEditing.value) {
+    // 如果存在同一小时的记录且不是编辑模式，提示用户
+    ElMessageBox.confirm(
+      '当前时间已存在记录，是否覆盖？',
+      '提示',
+      {
+        confirmButtonText: '覆盖',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    ).then(() => {
+      // 用户确认覆盖，更新现有记录
+      recordsStore.updateRecord(currentChild.value.id, sameTimeRecord.id, form.value)
+      showAddDialog.value = false
+      resetForm()
+    }).catch(() => {
+      // 用户取消操作
+      ElMessage.info('已取消添加')
+    })
   } else {
-    recordsStore.addRecord(currentChild.value.id, form.value)
+    // 没有重复记录或是编辑模式，直接保存
+    if (isEditing.value) {
+      recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, form.value)
+    } else {
+      recordsStore.addRecord(currentChild.value.id, form.value)
+    }
+    showAddDialog.value = false
+    resetForm()
   }
-  showAddDialog.value = false
-  resetForm()
 }
 
 const formatDateForFileName = (date) => {
@@ -517,14 +580,41 @@ const processFileContent = async (rows, fileNameChildName) => {
       targetChildId = existingChild.id;
     }
 
-    // 添加记录
+    // 获取现有记录
+    const existingRecords = recordsStore.getChildRecords(targetChildId);
+    
+    // 添加记录（带去重逻辑）
     let addedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+
     records.forEach(record => {
-      recordsStore.addRecord(targetChildId, record);
-      addedCount++;
+      // 查找相同日期时间的记录
+      const existingRecord = existingRecords.find(er => er.date === record.date);
+      
+      if (!existingRecord) {
+        // 如果不存在相同日期时间的记录，添加新记录
+        recordsStore.addRecord(targetChildId, record);
+        addedCount++;
+      } else {
+        // 如果存在相同日期时间的记录，检查数据是否相同
+        if (existingRecord.height !== record.height || existingRecord.weight !== record.weight) {
+          // 数据不同，更新记录
+          recordsStore.updateRecord(targetChildId, existingRecord.id, record);
+          updatedCount++;
+        } else {
+          // 数据相同，跳过
+          skippedCount++;
+        }
+      }
     });
 
-    ElMessage.success(`导入成功：新增${addedCount}条记录`);
+    const resultMessage = [];
+    if (addedCount > 0) resultMessage.push(`新增${addedCount}条记录`);
+    if (updatedCount > 0) resultMessage.push(`更新${updatedCount}条记录`);
+    if (skippedCount > 0) resultMessage.push(`跳过${skippedCount}条重复记录`);
+
+    ElMessage.success(`导入成功：${resultMessage.join('，')}`);
     
     // 如果当前没有选中儿童，自动选中导入的儿童
     if (!currentChild.value) {
