@@ -1,6 +1,12 @@
 # 成长记录 v1.0.0 正式版发布
 
-这是一个帮助父母记录和追踪孩子生长发育数据的应用程序。 developed by cursor with mainly sonnet ,arch and desgin with deepseek r1 and ChatGpt o1
+这是一个帮助父母记录和追踪孩子生长发育数据的应用程序。 
+## 开发信息
+Developed with:
+- IDE: Cursor
+- Core AI: Claude 3 Sonnet
+- Architecture & Design: DeepSeek R1 & ChatGPT o1 
+- Framework: Vue 3 + Capacitor + Element Plus
 
 ## 主要功能
 
