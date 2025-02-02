@@ -6,10 +6,28 @@
 
     <template v-else>
       <div class="records-header">
-        <h2>生长记录</h2>
-        <el-button type="primary" @click="showAddDialog = true">
-          <el-icon><Plus /></el-icon>添加记录
-        </el-button>
+        <div class="records-header-left">
+          <h2>生长记录</h2>
+          <el-button type="primary" plain @click="exportToCsv">
+            <el-icon><Download /></el-icon>导出CSV
+          </el-button>
+          <el-upload
+            action=""
+            :auto-upload="false"
+            :show-file-list="false"
+            accept=".csv"
+            @change="handleFileChange"
+          >
+            <el-button type="primary" plain>
+              <el-icon><Upload /></el-icon>导入CSV
+            </el-button>
+          </el-upload>
+        </div>
+        <div class="records-header-right">
+          <el-button type="primary" @click="showAddDialog = true">
+            <el-icon><Plus /></el-icon>添加记录
+          </el-button>
+        </div>
       </div>
 
       <el-table :data="sortedRecords" style="width: 100%">
@@ -87,8 +105,8 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import { Plus, Edit, Delete, Download, Upload } from '@element-plus/icons-vue'
+import { ElMessageBox, ElMessage } from 'element-plus'
 
 const router = useRouter()
 const childrenStore = useChildrenStore()
@@ -157,6 +175,84 @@ const formatDate = (dateStr) => {
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${year}年${month}月${day}日 ${hours}:${minutes}`
 }
+
+const exportToCsv = () => {
+  if (!currentChild.value || !sortedRecords.value.length) {
+    ElMessage.warning('没有可导出的记录')
+    return
+  }
+
+  // 准备CSV内容
+  const headers = ['日期', '身高(cm)', '体重(kg)']
+  const rows = sortedRecords.value.map(record => [
+    formatDate(record.date),
+    record.height,
+    record.weight
+  ])
+  
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.join(','))
+  ].join('\n')
+
+  // 创建Blob对象
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  
+  // 创建下载链接
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', `${currentChild.value.name}_生长记录.csv`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+const handleFileChange = (file) => {
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const text = e.target.result
+      const rows = text.split('\n').map(row => row.trim()).filter(row => row)
+      
+      // 跳过标题行
+      const records = rows.slice(1).map(row => {
+        const [dateStr, height, weight] = row.split(',')
+        
+        // 解析日期
+        const date = new Date(dateStr)
+        if (isNaN(date.getTime())) {
+          throw new Error('日期格式不正确')
+        }
+
+        // 验证数据
+        const heightNum = parseFloat(height)
+        const weightNum = parseFloat(weight)
+        if (isNaN(heightNum) || isNaN(weightNum)) {
+          throw new Error('身高或体重格式不正确')
+        }
+
+        return {
+          date: date.toISOString().slice(0, 16),
+          height: heightNum,
+          weight: weightNum
+        }
+      })
+
+      // 添加记录
+      records.forEach(record => {
+        recordsStore.addRecord(currentChild.value.id, record)
+      })
+
+      ElMessage.success(`成功导入 ${records.length} 条记录`)
+    } catch (error) {
+      ElMessage.error('导入失败：' + error.message)
+    }
+  }
+  reader.readAsText(file.raw)
+}
 </script>
 
 <style scoped>
@@ -177,6 +273,18 @@ const formatDate = (dateStr) => {
   background: #FFFFFF;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+}
+
+.records-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.records-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .records-header h2 {
