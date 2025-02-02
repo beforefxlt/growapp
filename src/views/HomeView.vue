@@ -77,16 +77,11 @@ const updateChart = () => {
   if (!chart || !currentChild.value) return
 
   const records = recordsStore.getChildRecords(currentChild.value.id)
-  const data = records.map(record => ({
-    value: [record.date, record[chartType.value]],
-    itemStyle: { 
-      color: '#807CA5',
-      borderWidth: 2,
-      borderColor: '#FFFFFF'
-    }
-  }))
+  // 按日期排序
+  const sortedRecords = records.sort((a, b) => new Date(a.date) - new Date(b.date))
 
   const option = {
+    animation: false,  // 禁用动画，避免重绘问题
     tooltip: {
       trigger: 'axis',
       formatter: function (params) {
@@ -104,22 +99,24 @@ const updateChart = () => {
       }
     },
     grid: {
-      left: 0,
-      right: 20,
+      left: '10%',
+      right: '5%',
       top: 20,
-      bottom: 5,
+      bottom: '15%',
       containLabel: true
     },
     xAxis: {
       type: 'time',
+      boundaryGap: false,
       axisLabel: {
         formatter: function (value) {
           const date = new Date(value)
+          const year = date.getFullYear()
           const month = date.getMonth() + 1
           const day = date.getDate()
-          return `${month}月${day}日`
+          return `${year}年${month}月${day}日`
         },
-        interval: 0,
+        interval: 'auto',
         rotate: 45,
         margin: 16,
         color: '#626270'
@@ -140,6 +137,7 @@ const updateChart = () => {
     yAxis: {
       type: 'value',
       position: 'left',
+      scale: true,
       axisLabel: {
         margin: 16,
         color: '#626270',
@@ -162,8 +160,11 @@ const updateChart = () => {
     series: [{
       type: 'line',
       name: chartType.value === 'height' ? '身高' : '体重',
-      data: data,
+      data: sortedRecords.map(record => [record.date, record[chartType.value]]),
+      showSymbol: true,
       symbolSize: 8,
+      smooth: true,
+      connectNulls: true,  // 连接空数据点
       itemStyle: {
         color: '#807CA5',
         borderWidth: 2,
@@ -171,20 +172,7 @@ const updateChart = () => {
       },
       lineStyle: {
         width: 3,
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [{
-            offset: 0,
-            color: '#807CA5'
-          }, {
-            offset: 1,
-            color: '#9DA0C5'
-          }]
-        }
+        color: '#807CA5'  // 使用单一颜色
       },
       areaStyle: {
         color: {
@@ -205,7 +193,10 @@ const updateChart = () => {
     }]
   }
 
-  chart.setOption(option)
+  // 清除之前的图表实例
+  chart.clear()
+  // 设置新的配置
+  chart.setOption(option, true)
 }
 
 onMounted(() => {
