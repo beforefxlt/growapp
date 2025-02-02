@@ -2,6 +2,20 @@
   "appId": "com.growapp.app",
   "appName": "GrowApp",
   "webDir": "dist",
+  "plugins": {
+    "GrowAppFilePlugin": {
+      "android": {
+        "path": "com.growapp.app.plugins.FilePlugin",
+        "methods": [
+          "saveFile",
+          "checkPermissions",
+          "requestPermissions",
+          "pickFile",
+          "readFile"
+        ]
+      }
+    }
+  },
   "android": {
     "buildOptions": {
       "javaVersion": "17"
