@@ -1,5 +1,10 @@
 {
   "appId": "com.growapp.app",
   "appName": "GrowApp",
-  "webDir": "dist"
+  "webDir": "dist",
+  "android": {
+    "buildOptions": {
+      "javaVersion": "17"
+    }
+  }
 }

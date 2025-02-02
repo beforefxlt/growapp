@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { Preferences } from '@capacitor/preferences'
 
 export const useChildrenStore = defineStore('children', {
   state: () => ({
@@ -53,11 +54,11 @@ export const useChildrenStore = defineStore('children', {
       this.saveToLocal()
     },
 
-    loadFromLocal() {
+    async loadFromLocal() {
       try {
-        const data = localStorage.getItem('children')
-        if (data) {
-          const parsed = JSON.parse(data)
+        const { value } = await Preferences.get({ key: 'children' })
+        if (value) {
+          const parsed = JSON.parse(value)
           this.children = parsed.children
           this.currentChildId = parsed.currentChildId
         }
@@ -66,12 +67,15 @@ export const useChildrenStore = defineStore('children', {
       }
     },
 
-    saveToLocal() {
+    async saveToLocal() {
       try {
-        localStorage.setItem('children', JSON.stringify({
-          children: this.children,
-          currentChildId: this.currentChildId
-        }))
+        await Preferences.set({
+          key: 'children',
+          value: JSON.stringify({
+            children: this.children,
+            currentChildId: this.currentChildId
+          })
+        })
       } catch (error) {
         console.error('Failed to save children data:', error)
       }

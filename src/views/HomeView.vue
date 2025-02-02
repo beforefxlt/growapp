@@ -37,7 +37,24 @@ import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
 import { Plus } from '@element-plus/icons-vue'
-import * as echarts from 'echarts'
+import * as echarts from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import {
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  TimelineComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+
+echarts.use([
+  TitleComponent,
+  TooltipComponent,
+  GridComponent,
+  TimelineComponent,
+  LineChart,
+  CanvasRenderer
+])
 
 const router = useRouter()
 const childrenStore = useChildrenStore()
@@ -68,26 +85,44 @@ const updateChart = () => {
   const option = {
     title: {
       text: chartType.value === 'height' ? '身高曲线' : '体重曲线',
-      left: 'center'
+      left: 10,
+      top: 10,
+      padding: 0
     },
     tooltip: {
       trigger: 'axis'
     },
+    grid: {
+      left: '10%',
+      right: '4%',
+      top: 60,
+      bottom: 60,
+      containLabel: true
+    },
     xAxis: {
       type: 'time',
       name: '日期',
+      nameLocation: 'middle',
+      nameGap: 35,
       axisLabel: {
         formatter: function (value) {
           const date = new Date(value);
-          return date.toLocaleDateString();
-        }
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1;
+          const day = date.getDate();
+          return `${year}年${month}月${day}日`;
+        },
+        interval: 0,
+        rotate: 45
       }
     },
     yAxis: {
       type: 'value',
       name: chartType.value === 'height' ? '身高(cm)' : '体重(kg)',
       nameLocation: 'middle',
-      nameGap: 40
+      nameGap: 40,
+      nameRotate: 0,
+      position: 'left'
     },
     series: [{
       type: 'line',
@@ -111,28 +146,83 @@ watch([chartType, currentChild], updateChart)
 
 <style scoped>
 .home-container {
-  padding: 20px;
+  padding: 0;
+  margin: 0;
+  width: 100vw;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .child-info {
-  margin-bottom: 20px;
+  margin: 0;
+  padding: 0 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chart-container {
   background: #fff;
-  padding: 20px;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+  padding: 0;
+  margin: 20px 0 0 0;
+  border-radius: 0;
+  box-shadow: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin: 0 0 20px 0;
+  padding: 0 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chart {
   height: 400px;
+  width: 100%;
+  margin: 0;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+:deep(.el-descriptions) {
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+:deep(.el-descriptions__body) {
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+}
+
+:deep(.el-descriptions__table) {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border-collapse: collapse;
+}
+
+:deep(.el-descriptions__cell) {
+  padding: 8px !important;
+}
+
+:deep(.el-descriptions__label) {
+  margin: 0;
+  padding: 8px !important;
+}
+
+:deep(.el-descriptions__content) {
+  margin: 0;
+  padding: 8px !important;
+}
+
+:deep(.el-table__cell) {
+  padding: 8px !important;
 }
 </style>

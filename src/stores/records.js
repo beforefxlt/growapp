@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { Preferences } from '@capacitor/preferences'
 
 export const useRecordsStore = defineStore('records', {
   state: () => ({
@@ -53,20 +54,23 @@ export const useRecordsStore = defineStore('records', {
       this.saveToLocal()
     },
 
-    loadFromLocal() {
+    async loadFromLocal() {
       try {
-        const data = localStorage.getItem('records')
-        if (data) {
-          this.records = JSON.parse(data)
+        const { value } = await Preferences.get({ key: 'records' })
+        if (value) {
+          this.records = JSON.parse(value)
         }
       } catch (error) {
         console.error('Failed to load records data:', error)
       }
     },
 
-    saveToLocal() {
+    async saveToLocal() {
       try {
-        localStorage.setItem('records', JSON.stringify(this.records))
+        await Preferences.set({
+          key: 'records',
+          value: JSON.stringify(this.records)
+        })
       } catch (error) {
         console.error('Failed to save records data:', error)
       }

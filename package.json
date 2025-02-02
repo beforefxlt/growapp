@@ -12,9 +12,10 @@
     "test:e2e:ci": "cypress run"
   },
   "dependencies": {
-    "@capacitor/android": "^7.0.1",
-    "@capacitor/cli": "^7.0.1",
-    "@capacitor/core": "^7.0.1",
+    "@capacitor/android": "^5.7.0",
+    "@capacitor/cli": "^5.7.0",
+    "@capacitor/core": "^5.7.0",
+    "@capacitor/preferences": "^5.0.0",
     "echarts": "^5.4.3",
     "element-plus": "^2.3.12",
     "pinia": "^2.1.6",

@@ -13,10 +13,17 @@
       </div>
 
       <el-table :data="sortedRecords" style="width: 100%">
-        <el-table-column prop="date" label="日期" width="180" />
-        <el-table-column prop="height" label="身高(cm)" width="120" />
-        <el-table-column prop="weight" label="体重(kg)" width="120" />
-        <el-table-column label="操作">
+        <el-table-column label="日期" width="120">
+          <template #default="{ row }">
+            {{ formatDate(row.date) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="身高/体重">
+          <template #default="{ row }">
+            {{ row.height }}cm / {{ row.weight }}kg
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100">
           <template #default="{ row }">
             <el-button-group>
               <el-button type="primary" link @click="editRecord(row)">
@@ -137,11 +144,21 @@ const saveRecord = () => {
   showAddDialog.value = false
   resetForm()
 }
+
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}年${month}月${day}日`
+}
 </script>
 
 <style scoped>
 .records-container {
-  padding: 20px;
+  padding: 10px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .records-header {
@@ -153,5 +170,19 @@ const saveRecord = () => {
 
 .records-header h2 {
   margin: 0;
+}
+
+:deep(.el-table) {
+  width: 100% !important;
+}
+
+:deep(.el-table__cell) {
+  padding: 8px !important;
+  text-align: center !important;
+}
+
+:deep(.el-button-group) {
+  display: flex;
+  justify-content: center;
 }
 </style>

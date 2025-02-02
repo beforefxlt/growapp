@@ -35,7 +35,7 @@
           {{ child.gender === 'male' ? '男' : '女' }}
         </el-descriptions-item>
         <el-descriptions-item label="出生日期">
-          {{ child.birthDate }}
+          {{ formatDate(child.birthDate) }}
         </el-descriptions-item>
       </el-descriptions>
     </el-card>
@@ -60,6 +60,8 @@
             v-model="form.birthDate"
             type="date"
             placeholder="选择出生日期"
+            format="YYYY年MM月DD日"
+            value-format="YYYY-MM-DD"
             style="width: 100%"
           />
         </el-form-item>
@@ -95,6 +97,14 @@ const form = ref({
   gender: 'male',
   birthDate: ''
 })
+
+const formatDate = (dateStr) => {
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  return `${year}年${month}月${day}日`
+}
 
 const resetForm = () => {
   form.value = {
