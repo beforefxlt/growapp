@@ -40,7 +40,8 @@
       <el-dialog
         v-model="showAddDialog"
         :title="isEditing ? '编辑记录' : '添加记录'"
-        width="500px"
+        width="90%"
+        class="record-dialog"
       >
         <el-form :model="form" label-width="100px">
           <el-form-item label="日期">
@@ -99,9 +100,9 @@ const isEditing = ref(false)
 const editingRecordId = ref(null)
 
 const form = ref({
-  date: '',
-  height: 0,
-  weight: 0
+  date: new Date(),
+  height: null,
+  weight: null
 })
 
 const sortedRecords = computed(() => {
@@ -113,8 +114,8 @@ const sortedRecords = computed(() => {
 const resetForm = () => {
   form.value = {
     date: new Date(),
-    height: 0,
-    weight: 0
+    height: null,
+    weight: null
   }
   isEditing.value = false
   editingRecordId.value = null
@@ -159,6 +160,8 @@ const formatDate = (dateStr) => {
   padding: 10px;
   max-width: 100%;
   box-sizing: border-box;
+  background-color: #F6F6FB;
+  min-height: 100vh;
 }
 
 .records-header {
@@ -166,23 +169,113 @@ const formatDate = (dateStr) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  padding: 15px 20px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
 }
 
 .records-header h2 {
   margin: 0;
+  color: #2F2F38;
+  font-weight: 500;
+  font-size: 18px;
 }
 
 :deep(.el-table) {
-  width: 100% !important;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+  
+  .el-table__header th {
+    background-color: #F4F5F7;
+    color: #626270;
+    font-weight: 500;
+  }
+  
+  .el-table__row {
+    background-color: #FFFFFF;
+    &:hover {
+      background-color: #F6F6FB;
+    }
+  }
 }
 
 :deep(.el-table__cell) {
-  padding: 8px !important;
+  padding: 12px !important;
   text-align: center !important;
+}
+
+:deep(.el-button.is-link) {
+  padding: 8px;
+  border-radius: 4px;
+  background: none;
+  border: none;
+  
+  &.el-button--primary {
+    color: #807CA5;
+    &:hover {
+      color: #9DA0C5;
+    }
+  }
+  
+  &.el-button--danger {
+    color: #F56C6C;
+    &:hover {
+      color: #FF7C7C;
+    }
+  }
 }
 
 :deep(.el-button-group) {
   display: flex;
   justify-content: center;
+  gap: 8px;
+  
+  .el-button + .el-button {
+    margin-left: 0;
+  }
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+  border: none;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
+  }
+}
+
+:deep(.record-dialog) {
+  .el-dialog {
+    max-width: 360px;
+    margin: 0 auto;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .el-dialog__header {
+    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+    padding: 15px 20px;
+    margin-right: 0;
+    .el-dialog__title {
+      color: #FFFFFF;
+      font-size: 16px;
+      font-weight: 500;
+    }
+  }
+
+  .el-dialog__body {
+    padding: 20px;
+  }
+
+  .el-form-item__label {
+    color: #626270;
+    font-weight: 500;
+  }
 }
 </style>
