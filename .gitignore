@@ -30,6 +30,14 @@ out/
 .gradle/
 local.properties
 proguard/
+android/app/build/
+android/build/
+android/captures/
+android/gradle/
+android/.gradle/
+android/local.properties
+android/app/release/
+android/capacitor-cordova-android-plugins/
 
 # iOS
 *.ipa
