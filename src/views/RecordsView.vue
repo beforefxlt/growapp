@@ -7,30 +7,16 @@
     <template v-else>
       <div class="records-header">
         <div class="records-header-left">
-          <h2>生长记录</h2>
-          <el-button type="primary" plain @click="exportToCsv">
-            <el-icon><Download /></el-icon>导出CSV
-          </el-button>
-          <el-upload
-            action=""
-            :auto-upload="false"
-            :show-file-list="false"
-            accept=".csv"
-            @change="handleFileChange"
-          >
-            <el-button type="primary" plain>
-              <el-icon><Upload /></el-icon>导入CSV
+          <h2 class="records-title">生长记录</h2>
+          <div class="action-buttons">
+            <el-button type="primary" @click="showAddDialog = true">
+              <el-icon><Plus /></el-icon>添加记录
             </el-button>
-          </el-upload>
-        </div>
-        <div class="records-header-right">
-          <el-button type="primary" @click="showAddDialog = true">
-            <el-icon><Plus /></el-icon>添加记录
-          </el-button>
+          </div>
         </div>
       </div>
 
-      <el-table :data="sortedRecords" style="width: 100%">
+      <el-table :data="sortedRecords" style="width: 100%; margin-bottom: 20px;">
         <el-table-column label="日期" width="120">
           <template #default="{ row }">
             {{ formatDate(row.date) }}
@@ -54,6 +40,23 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <div class="csv-actions">
+        <el-button type="primary" plain @click="exportToCsv">
+          <el-icon><Download /></el-icon>导出CSV
+        </el-button>
+        <el-upload
+          action=""
+          :auto-upload="false"
+          :show-file-list="false"
+          accept=".csv"
+          @change="handleFileChange"
+        >
+          <el-button type="primary" plain>
+            <el-icon><Upload /></el-icon>导入CSV
+          </el-button>
+        </el-upload>
+      </div>
 
       <el-dialog
         v-model="showAddDialog"
@@ -275,23 +278,30 @@ const handleFileChange = (file) => {
   box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
 }
 
+.records-title {
+  margin: 0;
+  color: #2F2F38;
+  font-weight: 500;
+  font-size: 18px;
+  min-width: 72px;
+}
+
 .records-header-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 
 .records-header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 16px;
 }
 
-.records-header h2 {
-  margin: 0;
-  color: #2F2F38;
-  font-weight: 500;
-  font-size: 18px;
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 :deep(.el-table) {
@@ -388,6 +398,31 @@ const handleFileChange = (file) => {
   .el-form-item__label {
     color: #626270;
     font-weight: 500;
+  }
+}
+
+.csv-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 20px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+  margin-top: 20px;
+}
+
+:deep(.el-button--primary.is-plain) {
+  background: #fff;
+  border: 1px solid #807CA5;
+  color: #807CA5;
+  
+  &:hover {
+    background: #F4F5F7;
+    color: #9DA0C5;
+    border-color: #9DA0C5;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.1);
   }
 }
 </style>
