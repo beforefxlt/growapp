@@ -83,52 +83,63 @@ const updateChart = () => {
   }))
 
   const option = {
-    title: {
-      text: chartType.value === 'height' ? '身高曲线' : '体重曲线',
-      left: 10,
-      top: 10,
-      padding: 0
-    },
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: function (params) {
+        const date = new Date(params[0].value[0])
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}年${month}月${day}日<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
+      }
     },
     grid: {
-      left: '10%',
-      right: '4%',
-      top: 60,
-      bottom: 60,
+      left: 0,
+      right: 20,
+      top: 20,
+      bottom: 5,
       containLabel: true
     },
     xAxis: {
       type: 'time',
-      name: '日期',
-      nameLocation: 'middle',
-      nameGap: 35,
       axisLabel: {
         formatter: function (value) {
-          const date = new Date(value);
-          const year = date.getFullYear();
-          const month = date.getMonth() + 1;
-          const day = date.getDate();
-          return `${year}年${month}月${day}日`;
+          const date = new Date(value)
+          const month = date.getMonth() + 1
+          const day = date.getDate()
+          return `${month}月${day}日`
         },
         interval: 0,
-        rotate: 45
+        rotate: 45,
+        margin: 16
       }
     },
     yAxis: {
       type: 'value',
-      name: chartType.value === 'height' ? '身高(cm)' : '体重(kg)',
-      nameLocation: 'middle',
-      nameGap: 40,
-      nameRotate: 0,
-      position: 'left'
+      position: 'left',
+      axisLabel: {
+        margin: 16,
+        formatter: function(value) {
+          return value + (chartType.value === 'height' ? 'cm' : 'kg');
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          type: 'dashed'
+        }
+      }
     },
     series: [{
       type: 'line',
       name: chartType.value === 'height' ? '身高' : '体重',
       data: data,
-      symbolSize: 8
+      symbolSize: 8,
+      itemStyle: {
+        color: '#409EFF'
+      },
+      lineStyle: {
+        width: 2
+      }
     }]
   }
 
@@ -148,9 +159,9 @@ watch([chartType, currentChild], updateChart)
 .home-container {
   padding: 0;
   margin: 0;
-  width: 100vw;
+  width: 100%;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .child-info {
@@ -163,7 +174,7 @@ watch([chartType, currentChild], updateChart)
 .chart-container {
   background: #fff;
   padding: 0;
-  margin: 20px 0 0 0;
+  margin: 10px 0 0 0;
   border-radius: 0;
   box-shadow: none;
   width: 100%;
@@ -174,14 +185,15 @@ watch([chartType, currentChild], updateChart)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 0 20px 0;
+  margin: 0 0 10px 0;
   padding: 0 10px;
   width: 100%;
   box-sizing: border-box;
 }
 
 .chart {
-  height: 400px;
+  height: calc(100vh - 220px);
+  min-height: 380px;
   width: 100%;
   margin: 0;
   padding: 0 10px;
@@ -224,5 +236,9 @@ watch([chartType, currentChild], updateChart)
 
 :deep(.el-table__cell) {
   padding: 8px !important;
+}
+
+:deep(.el-select) {
+  width: 120px;
 }
 </style>
