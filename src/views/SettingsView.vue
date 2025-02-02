@@ -2,9 +2,14 @@
   <div class="settings-container">
     <div class="settings-header">
       <h2>儿童信息管理</h2>
-      <el-button type="primary" @click="showAddDialog = true">
-        <el-icon><Plus /></el-icon>添加儿童
-      </el-button>
+      <div class="header-buttons">
+        <el-button type="primary" @click="showSyncDialog = true">
+          <el-icon><Share /></el-icon>同步数据
+        </el-button>
+        <el-button type="primary" @click="showAddDialog = true">
+          <el-icon><Plus /></el-icon>添加儿童
+        </el-button>
+      </div>
     </div>
 
     <el-empty v-if="!hasChildren" description="暂无儿童信息" />
@@ -72,6 +77,51 @@
         <el-button type="primary" @click="saveChild">保存</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="showSyncDialog"
+      title="数据同步"
+      width="90%"
+      class="sync-dialog"
+      :close-on-click-modal="false"
+    >
+      <el-form label-position="top">
+        <el-form-item label="选择儿童">
+          <el-select v-model="selectedChildId" placeholder="请选择要同步的儿童" style="width: 100%">
+            <el-option
+              v-for="child in children"
+              :key="child.id"
+              :label="child.name"
+              :value="child.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="同步码">
+          <el-input
+            v-model="syncCode"
+            type="textarea"
+            :rows="3"
+            :autosize="{ minRows: 3, maxRows: 4 }"
+            style="word-break: break-all; width: 100%;"
+            :placeholder="selectedChildId ? '点击生成同步码或输入收到的同步码' : '请先选择要同步的儿童'"
+          />
+          <div class="sync-tip" v-if="syncCode">
+            提示：同步码包含了选中儿童的所有生长记录数据
+          </div>
+        </el-form-item>
+        <div class="sync-actions">
+          <el-button type="primary" @click="handleSync" :disabled="!selectedChildId">
+            <el-icon><Upload /></el-icon>生成同步码
+          </el-button>
+          <el-button type="primary" @click="copySyncCode" :disabled="!syncCode">
+            <el-icon><Link /></el-icon>复制同步码
+          </el-button>
+          <el-button type="success" @click="handleImportSync" :disabled="!syncCode">
+            <el-icon><Download /></el-icon>导入同步码
+          </el-button>
+        </div>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
@@ -79,11 +129,13 @@
 import { ref, computed, watch } from 'vue'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { useSyncStore } from '../stores/sync'
+import { Plus, Edit, Delete, Share, Link, Upload, Download } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
 const childrenStore = useChildrenStore()
 const recordsStore = useRecordsStore()
+const syncStore = useSyncStore()
 
 const children = computed(() => childrenStore.children)
 const hasChildren = computed(() => childrenStore.hasChildren)
@@ -92,6 +144,9 @@ const currentChildId = computed(() => childrenStore.currentChildId)
 const showAddDialog = ref(false)
 const isEditing = ref(false)
 const editingChildId = ref(null)
+const showSyncDialog = ref(false)
+const syncCode = ref('')
+const selectedChildId = ref('')
 
 // 监听弹窗显示状态，当弹窗打开时，如果不是编辑模式就重置表单
 watch(showAddDialog, (newVal) => {
@@ -172,6 +227,79 @@ const saveChild = () => {
   }
   showAddDialog.value = false
   resetForm()
+}
+
+const handleSync = () => {
+  if (!selectedChildId.value) {
+    ElMessage.warning('请选择要同步的儿童')
+    return
+  }
+  
+  const code = syncStore.generateSyncData(selectedChildId.value)
+  if (code) {
+    syncCode.value = code
+    showSyncDialog.value = true
+  } else {
+    ElMessage.error('生成同步码失败')
+  }
+}
+
+const handleImportSync = () => {
+  if (!syncCode.value) {
+    ElMessage.warning('请输入同步码')
+    return
+  }
+
+  ElMessageBox.confirm(
+    '导入数据将会添加新的记录，如果已存在相同日期的记录将会保留最新的数据。是否继续？',
+    '确认导入',
+    {
+      confirmButtonText: '确定导入',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    const result = syncStore.importSyncData(syncCode.value)
+    if (result.success) {
+      ElMessage.success(result.message)
+      showSyncDialog.value = false
+      syncCode.value = ''
+    } else {
+      ElMessage.error(result.message)
+    }
+  }).catch(() => {
+    // 用户取消导入
+  })
+}
+
+const copySyncCode = async () => {
+  if (!syncCode.value) {
+    ElMessage.warning('请先生成同步码')
+    return
+  }
+
+  try {
+    // 尝试使用 Clipboard API
+    await navigator.clipboard.writeText(syncCode.value)
+    ElMessage.success('同步码已复制到剪贴板')
+  } catch (err) {
+    // 备用复制方法
+    const textarea = document.createElement('textarea')
+    textarea.value = syncCode.value
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    
+    try {
+      document.execCommand('copy')
+      ElMessage.success('同步码已复制到剪贴板')
+    } catch (err) {
+      ElMessage.error('复制失败，请手动复制')
+    } finally {
+      document.body.removeChild(textarea)
+    }
+  }
 }
 </script>
 
@@ -327,6 +455,117 @@ const saveChild = () => {
   
   .el-descriptions__content {
     color: #2F2F38;
+  }
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.sync-code-input {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sync-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.sync-buttons-left {
+  display: flex;
+  gap: 8px;
+}
+
+.sync-buttons-right {
+  display: flex;
+  gap: 8px;
+}
+
+.sync-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.sync-dialog {
+  :deep(.el-dialog) {
+    max-width: 360px;
+    margin: 0 auto;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  :deep(.el-dialog__header) {
+    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+    padding: 15px 20px;
+    margin-right: 0;
+    .el-dialog__title {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 500;
+    }
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 20px;
+  }
+
+  :deep(.el-form-item__label) {
+    padding-bottom: 4px;
+  }
+  
+  :deep(.el-input__wrapper) {
+    max-width: 100%;
+  }
+  
+  :deep(.el-textarea__inner) {
+    font-family: monospace;
+    font-size: 14px;
+    word-break: break-all;
+    white-space: pre-wrap;
+  }
+}
+
+.sync-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  
+  .el-button {
+    width: 100%;
+    margin-left: 0;
+    justify-content: center;
+  }
+}
+
+:deep(.el-button--success) {
+  background: linear-gradient(135deg, #67C23A 0%, #85CE61 100%);
+  border: none;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: linear-gradient(135deg, #85CE61 0%, #95D475 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
+  }
+
+  &.is-disabled {
+    background: #b3e19d;
+    border-color: #b3e19d;
+    &:hover {
+      background: #b3e19d;
+      border-color: #b3e19d;
+      transform: none;
+      box-shadow: none;
+    }
   }
 }
 </style>
