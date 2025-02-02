@@ -13,12 +13,18 @@ npx cap sync android
 
 # 构建APK
 Write-Host "3. Building APK..."
-cd android
+Set-Location android
 ./gradlew assembleDebug
-cd ..
+Set-Location ..
 
-# 安装到模拟器
-Write-Host "4. Installing to emulator..."
+Write-Host "4. Checking emulator status..."
+$devices = & adb devices | Select-Object -Skip 1
+if ($devices.Count -eq 0) {
+    Write-Host "No emulator found. Please start an Android emulator first."
+    exit 1
+}
+
+Write-Host "5. Installing to emulator..."
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 
 Write-Host "Build and install completed!" 
