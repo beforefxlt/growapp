@@ -1,5 +1,19 @@
 <template>
   <div class="home-container">
+    <div class="nav-header">
+      <el-button-group>
+        <el-button :class="['nav-button', $route.path === '/' ? 'active' : '']" @click="router.push('/')">
+          <el-icon><House /></el-icon>首页
+        </el-button>
+        <el-button :class="['nav-button', $route.path === '/records' ? 'active' : '']" @click="router.push('/records')">
+          <el-icon><Notebook /></el-icon>记录
+        </el-button>
+        <el-button :class="['nav-button', $route.path === '/settings' ? 'active' : '']" @click="router.push('/settings')">
+          <el-icon><Setting /></el-icon>设置
+        </el-button>
+      </el-button-group>
+    </div>
+
     <el-empty v-if="!hasChildren" description="请先添加儿童信息">
       <el-button type="primary" @click="router.push('/settings')">去添加</el-button>
     </el-empty>
@@ -36,7 +50,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, House, Notebook, Setting } from '@element-plus/icons-vue'
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import {
@@ -80,16 +94,33 @@ const updateChart = () => {
   // 按日期排序
   const sortedRecords = records.sort((a, b) => new Date(a.date) - new Date(b.date))
 
+  // 计算年龄函数
+  const calculateAge = (recordDate) => {
+    const birthDate = new Date(currentChild.value.birthDate)
+    const recordDateTime = new Date(recordDate)
+    const diffTime = recordDateTime - birthDate
+    const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25)
+    return parseFloat(diffYears.toFixed(1))
+  }
+
+  // 转换数据，X轴使用年龄
+  const chartData = sortedRecords.map(record => ({
+    age: calculateAge(record.date),
+    value: record[chartType.value],
+    date: record.date
+  })).sort((a, b) => a.age - b.age)
+
   const option = {
     animation: false,  // 禁用动画，避免重绘问题
     tooltip: {
       trigger: 'axis',
       formatter: function (params) {
-        const date = new Date(params[0].value[0])
+        const date = new Date(chartData[params[0].dataIndex].date)
         const year = date.getFullYear()
         const month = String(date.getMonth() + 1).padStart(2, '0')
         const day = String(date.getDate()).padStart(2, '0')
-        return `${year}年${month}月${day}日<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
+        const age = params[0].value[0]
+        return `${year}年${month}月${day}日<br/>年龄: ${age}岁<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
       },
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#807CA5',
@@ -106,73 +137,41 @@ const updateChart = () => {
       containLabel: true
     },
     xAxis: {
-      type: 'time',
-      boundaryGap: false,
+      type: 'value',
+      name: '年龄（岁）',
+      nameLocation: 'middle',
+      nameGap: 30,
+      min: 0,  // 从0开始
+      max: Math.ceil(Math.max(...chartData.map(item => item.age))),  // 向上取整
       axisLabel: {
         formatter: function (value) {
-          const date = new Date(value)
-          const year = date.getFullYear()
-          const month = date.getMonth() + 1
-          const day = date.getDate()
-          return `${year}年${month}月${day}日`
-        },
-        interval: 'auto',
-        rotate: 45,
-        margin: 16,
-        color: '#626270'
-      },
-      axisLine: {
-        lineStyle: {
-          color: '#ECE7F0'
-        }
-      },
-      splitLine: {
-        show: true,
-        lineStyle: {
-          color: '#F4F5F7',
-          type: 'dashed'
+          return value.toFixed(1)
         }
       }
     },
     yAxis: {
       type: 'value',
-      position: 'left',
-      scale: true,
+      name: chartType.value === 'height' ? '身高（cm）' : '体重（kg）',
+      nameLocation: 'middle',
+      nameGap: 40,
+      min: chartType.value === 'height' ? 0 : null,  // 身高从0开始，体重保持自动
       axisLabel: {
-        margin: 16,
-        color: '#626270',
         formatter: function(value) {
-          return value + (chartType.value === 'height' ? 'cm' : 'kg');
-        }
-      },
-      axisLine: {
-        lineStyle: {
-          color: '#ECE7F0'
-        }
-      },
-      splitLine: {
-        lineStyle: {
-          color: '#F4F5F7',
-          type: 'dashed'
+          return value + (chartType.value === 'height' ? 'cm' : 'kg')
         }
       }
     },
     series: [{
-      type: 'line',
       name: chartType.value === 'height' ? '身高' : '体重',
-      data: sortedRecords.map(record => [record.date, record[chartType.value]]),
-      showSymbol: true,
-      symbolSize: 8,
+      type: 'line',
       smooth: true,
-      connectNulls: true,  // 连接空数据点
+      showSymbol: true,
+      data: chartData.map(item => [item.age, item.value]),
       itemStyle: {
-        color: '#807CA5',
-        borderWidth: 2,
-        borderColor: '#FFFFFF'
+        color: '#807CA5'
       },
       lineStyle: {
-        width: 3,
-        color: '#807CA5'  // 使用单一颜色
+        width: 2
       },
       areaStyle: {
         color: {
@@ -183,10 +182,10 @@ const updateChart = () => {
           y2: 1,
           colorStops: [{
             offset: 0,
-            color: 'rgba(128, 124, 165, 0.2)'
+            color: 'rgba(128, 124, 165, 0.3)'
           }, {
             offset: 1,
-            color: 'rgba(157, 160, 197, 0.05)'
+            color: 'rgba(128, 124, 165, 0)'
           }]
         }
       }
@@ -214,54 +213,123 @@ watch([chartType, currentChild], updateChart)
   margin: 0;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
   background-color: #F6F6FB;
   min-height: 100vh;
 }
 
+.nav-header {
+  display: flex;
+  justify-content: center;
+  background: #fff;
+  padding: 10px;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.el-button-group) {
+  width: 100%;
+  display: flex;
+  max-width: 360px;
+  
+  .nav-button {
+    flex: 1;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #666;
+    font-size: 14px;
+    height: 44px;
+    padding: 0;
+    position: relative;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    
+    .el-icon {
+      margin-right: 2px;
+      font-size: 16px;
+    }
+    
+    &.active {
+      color: #409EFF;
+      font-weight: normal;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #409EFF;
+      }
+    }
+    
+    &:hover {
+      background: transparent;
+      color: #409EFF;
+    }
+  }
+}
+
 .child-info {
   margin: 0;
-  padding: 0 10px;
-  width: 100%;
-  box-sizing: border-box;
+  padding: 15px;
   background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .chart-container {
   background: #FFFFFF;
-  padding: 0;
-  margin: 10px 0 0 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+  padding: 15px;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   width: 100%;
   box-sizing: border-box;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 0 10px 0;
-  padding: 10px;
+  padding-bottom: 15px;
   width: 100%;
   box-sizing: border-box;
+  flex-shrink: 0;
+  
+  :deep(.el-button) {
+    margin-left: 10px;
+    background: #807CA5;
+    border: none;
+    
+    &:hover {
+      background: #9DA0C5;
+    }
+  }
+  
+  :deep(.el-select) {
+    width: 120px;
+  }
 }
 
 .chart {
-  height: calc(100vh - 220px);
-  min-height: 380px;
+  flex: 1;
   width: 100%;
-  margin: 0;
-  padding: 0 10px;
-  box-sizing: border-box;
+  min-height: 300px;
+  position: relative;
 }
 
 :deep(.el-descriptions) {
-  padding: 10px;
-  margin: 0;
-  width: 100%;
+  padding: 0;
   
   .el-descriptions__title {
     color: #2F2F38;
@@ -269,7 +337,7 @@ watch([chartType, currentChild], updateChart)
   }
   
   .el-descriptions__label {
-    color: #626270;
+    color: #606266;
   }
   
   .el-descriptions__content {
@@ -277,47 +345,12 @@ watch([chartType, currentChild], updateChart)
   }
 }
 
-:deep(.el-button--primary) {
-  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
-  border: none;
-  padding: 8px 16px;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
-  }
-  
-  &.is-plain {
-    background: #FFFFFF;
-    border: 1px solid #807CA5;
-    color: #807CA5;
-    
-    &:hover {
-      background: #F4F5F7;
-      color: #9DA0C5;
-      border-color: #9DA0C5;
-    }
-  }
-}
-
-:deep(.el-select) {
-  width: 120px;
-  
-  .el-input__wrapper {
-    background-color: #F4F5F7;
-    border: 1px solid transparent;
-    
-    &:hover {
-      border-color: #9DA0C5;
-    }
-    
-    &.is-focus {
-      border-color: #807CA5;
-      box-shadow: 0 0 0 1px #807CA5;
-    }
-  }
+:deep(.el-empty) {
+  background: #fff;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 32px;
+  margin: 0;
 }
 
 /* 修改图表的默认配色 */
@@ -328,6 +361,15 @@ watch([chartType, currentChild], updateChart)
   
   .grid-line {
     stroke: #F4F5F7;
+  }
+}
+
+:deep(.el-button--primary) {
+  background: #807CA5;
+  border: none;
+  
+  &:hover {
+    background: #9DA0C5;
   }
 }
 </style>

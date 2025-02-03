@@ -122,8 +122,8 @@ const editingRecordId = ref(null)
 
 const form = ref({
   date: new Date().toISOString().slice(0, 16),  // 格式化到分钟
-  height: null,
-  weight: null
+  height: null,  // 身高默认为null
+  weight: null   // 体重默认为null
 })
 
 const sortedRecords = computed(() => {
@@ -158,9 +158,9 @@ const sortedRecords = computed(() => {
 
 const resetForm = () => {
   form.value = {
-    date: new Date().toISOString().slice(0, 16),
-    height: null,
-    weight: null
+    date: new Date().toISOString().slice(0, 16),  // 保持今天的日期
+    height: null,  // 身高默认为null
+    weight: null   // 体重默认为null
   }
   isEditing.value = false
   editingRecordId.value = null
@@ -580,30 +580,30 @@ const processFileContent = async (rows, fileNameChildName) => {
       targetChildId = existingChild.id;
     }
 
-    // 获取现有记录
-    const existingRecords = recordsStore.getChildRecords(targetChildId);
-    
-    // 添加记录（带去重逻辑）
+    // 添加记录（使用store的去重逻辑）
     let addedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
 
+    // 按创建时间排序，确保最新的记录优先处理
+    records.sort((a, b) => new Date(b.date) - new Date(a.date));
+
     records.forEach(record => {
-      // 查找相同日期时间的记录
-      const existingRecord = existingRecords.find(er => er.date === record.date);
+      // 使用store的hasRecordAtTime方法检查重复
+      const existingRecord = recordsStore.hasRecordAtTime(targetChildId, record.date);
       
       if (!existingRecord) {
-        // 如果不存在相同日期时间的记录，添加新记录
+        // 如果不存在相同时间的记录，添加新记录
         recordsStore.addRecord(targetChildId, record);
         addedCount++;
       } else {
-        // 如果存在相同日期时间的记录，检查数据是否相同
+        // 如果存在相同时间的记录，检查数据是否相同
         if (existingRecord.height !== record.height || existingRecord.weight !== record.weight) {
           // 数据不同，更新记录
           recordsStore.updateRecord(targetChildId, existingRecord.id, record);
           updatedCount++;
         } else {
-          // 数据相同，跳过
+          // 数据完全相同，跳过
           skippedCount++;
         }
       }
@@ -639,8 +639,9 @@ const formatImportTimestamp = (timestamp) => {
 
 <style scoped>
 .records-container {
-  padding: 10px;
-  max-width: 100%;
+  padding: 0;
+  margin: 0;
+  width: 100%;
   box-sizing: border-box;
   background-color: #F6F6FB;
   min-height: 100vh;
@@ -650,11 +651,25 @@ const formatImportTimestamp = (timestamp) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 15px 20px;
+  margin: 0;
+  padding: 15px 0;
   background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.records-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-left: 15px;
+}
+
+.records-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-right: 15px;
 }
 
 .records-title {
@@ -665,18 +680,6 @@ const formatImportTimestamp = (timestamp) => {
   min-width: 72px;
 }
 
-.records-header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.records-header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
 .action-buttons {
   display: flex;
   align-items: center;
@@ -684,22 +687,22 @@ const formatImportTimestamp = (timestamp) => {
 }
 
 :deep(.el-table) {
-  background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
-  
-  .el-table__header th {
-    background-color: #F4F5F7;
-    color: #626270;
-    font-weight: 500;
-  }
-  
-  .el-table__row {
-    background-color: #FFFFFF;
-    &:hover {
-      background-color: #F6F6FB;
-    }
-  }
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+:deep(.el-table .el-table__header th) {
+  background-color: #F4F5F7;
+  color: #626270;
+  font-weight: 500;
+}
+
+:deep(.el-table .el-table__row) {
+  background-color: #FFFFFF;
+}
+
+:deep(.el-table .el-table__row:hover) {
+  background-color: #F6F6FB;
 }
 
 :deep(.el-table__cell) {
@@ -784,11 +787,11 @@ const formatImportTimestamp = (timestamp) => {
   display: flex;
   justify-content: center;
   gap: 16px;
-  padding: 20px;
+  padding: 15px 0;
   background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
-  margin-top: 20px;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin: 0;
 }
 
 :deep(.el-button--primary.is-plain) {

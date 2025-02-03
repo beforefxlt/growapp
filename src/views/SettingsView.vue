@@ -327,14 +327,14 @@ const copySyncCode = async () => {
   align-items: center;
   margin-bottom: 20px;
   padding: 10px;
-  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+  background: #FFFFFF;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
 }
 
 .center-title {
   margin: 0;
-  color: #fff;
+  color: #2F2F38;
   font-weight: 500;
   text-align: center;
 }
