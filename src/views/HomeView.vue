@@ -43,7 +43,8 @@ import {
   TitleComponent,
   TooltipComponent,
   GridComponent,
-  TimelineComponent
+  TimelineComponent,
+  DataZoomComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { formatDate, calculateAge } from '../utils/dateUtils'
@@ -53,6 +54,7 @@ echarts.use([
   TooltipComponent,
   GridComponent,
   TimelineComponent,
+  DataZoomComponent,
   LineChart,
   CanvasRenderer
 ])
@@ -184,7 +186,25 @@ const updateChart = () => {
           }]
         }
       }
-    }]
+    }],
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        filterMode: 'none',
+        minSpan: 10,
+        start: 0,
+        end: 100
+      },
+      {
+        type: 'inside',
+        yAxisIndex: 0,
+        filterMode: 'none',
+        minSpan: 10,
+        start: 0,
+        end: 100
+      }
+    ]
   }
 
   // 清除之前的图表实例
