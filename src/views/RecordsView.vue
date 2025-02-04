@@ -364,7 +364,7 @@ const handleRowClick = (row) => {
   .el-button {
     width: 100%;
     height: 40px;
-    justify-content: flex-start;
+    justify-content: center;
     background: #FFFFFF;
     border: 1px solid #DCDFE6;
     color: #606266;
@@ -455,7 +455,7 @@ const handleRowClick = (row) => {
   .el-button {
     width: 100%;
     height: 40px;
-    justify-content: flex-start;
+    justify-content: center;
     background: #FFFFFF;
     border: 1px solid #DCDFE6;
     color: #606266;
