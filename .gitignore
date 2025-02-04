@@ -7,6 +7,11 @@ node_modules/
 dist/
 build/
 
+# CSV Files
+*.csv
+*/*.csv
+**/*.csv
+
 # IDE - VSCode
 .vscode/*
 !.vscode/extensions.json
