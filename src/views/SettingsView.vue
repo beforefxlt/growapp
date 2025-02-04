@@ -322,10 +322,10 @@ const copySyncCode = async () => {
   box-sizing: border-box;
   background-color: #F6F6FB;
   min-height: 100vh;
-  height: 100vh; /* 固定高度为视口高度 */
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 防止整体滚动 */
+  overflow: hidden;
 }
 
 .settings-header {
@@ -333,15 +333,14 @@ const copySyncCode = async () => {
   flex-direction: column;
   align-items: center;
   margin: 0;
-  padding: 15px;
+  padding: var(--spacing-base, 1rem);
   background: #FFFFFF;
-  border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
 }
 
 .center-title {
-  margin: 0 0 15px 0;
+  margin: 0 0 var(--spacing-base, 1rem) 0;
   color: #2F2F38;
   font-weight: 500;
   text-align: center;
@@ -349,348 +348,139 @@ const copySyncCode = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
+  font-size: clamp(1rem, 2vw, 1.25rem);
 }
 
 .header-buttons {
   display: flex;
-  gap: 10px;
+  gap: clamp(0.5rem, 2vw, 1rem);
   width: 100%;
   justify-content: center;
+  
+  @media screen and (max-width: 576px) {
+    flex-direction: column;
+  }
 }
 
 .header-buttons .el-button {
   flex: 1;
-  max-width: 160px;
+  max-width: clamp(120px, 30vw, 160px);
+  
+  @media screen and (max-width: 576px) {
+    max-width: none;
+  }
 }
 
 .settings-content {
   flex: 1;
-  overflow-y: auto; /* 只有内容超出时才能滚动 */
-  -webkit-overflow-scrolling: touch; /* 在iOS上提供平滑滚动 */
-  padding: 15px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--spacing-base, 1rem);
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: var(--spacing-base, 1rem);
 }
 
 .child-card {
-  margin-bottom: 15px;
-  border-radius: 8px;
-  overflow: hidden;
+  margin-bottom: var(--spacing-base, 1rem);
   box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+  overflow: hidden;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: clamp(0.5rem, 2vw, 1rem);
+  
+  @media screen and (max-width: 576px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .button-group {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.button-group :deep(.el-button) + :deep(.el-button) {
-  margin-left: 0;
-}
-
-:deep(.el-button.is-link) {
-  background: none;
-  border: none;
-  padding: 4px 8px;
-}
-
-:deep(.el-button--primary.is-link) {
-  margin-left: 8px;
-  color: #807CA5;
-}
-
-:deep(.el-button--primary.is-link:hover) {
-  color: #9DA0C5;
-}
-
-:deep(.el-button--danger.is-link) {
-  color: #F56C6C;
-}
-
-:deep(.el-button--danger.is-link:hover) {
-  color: #FF7C7C;
-}
-
-:deep(.child-dialog .el-dialog) {
-  max-width: 360px;
-  margin: 0 auto;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-:deep(.child-dialog .el-dialog__header) {
-  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
-  padding: 15px 20px;
-  margin-right: 0;
-}
-
-:deep(.child-dialog .el-dialog__title) {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-:deep(.child-dialog .el-dialog__body) {
-  padding: 20px;
-}
-
-:deep(.child-dialog .el-form-item__label) {
-  color: #626270;
-  font-weight: 500;
+  gap: 0.5rem;
+  
+  @media screen and (max-width: 576px) {
+    justify-content: stretch;
+    
+    .el-button {
+      flex: 1;
+    }
+  }
 }
 
 :deep(.el-button--primary) {
   background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
   border: none;
-  padding: 8px 16px;
+  padding: clamp(0.5rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
   transition: all 0.3s ease;
-}
-
-:deep(.el-button--primary:hover) {
-  background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
+  
+  &:hover {
+    background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
+  }
 }
 
 :deep(.el-button--primary.is-plain) {
   background: #fff;
   border: 1px solid #807CA5;
   color: #807CA5;
+  
+  &:hover {
+    background: #F4F5F7;
+    color: #9DA0C5;
+    border-color: #9DA0C5;
+  }
 }
 
-:deep(.el-button--primary.is-plain:hover) {
-  background: #F4F5F7;
-  color: #9DA0C5;
-  border-color: #9DA0C5;
-}
-
-:deep(.el-button--default) {
-  border: 1px solid #dcdfe6;
-}
-
-:deep(.el-button--default:hover) {
-  border-color: #807CA5;
-  color: #807CA5;
-}
-
-:deep(.el-card) {
-  border-radius: 8px;
-  border: none;
-}
-
-:deep(.el-card .el-card__header) {
-  padding: 15px 20px;
-  border-bottom: 1px solid #ebeef5;
-  background: #F4F5F7;
+:deep(.el-dialog) {
+  width: clamp(300px, 90vw, 360px) !important;
+  margin: var(--spacing-base, 1rem) auto !important;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  
+  .el-dialog__body {
+    overflow-y: auto;
+    flex: 1;
+    padding: var(--spacing-base, 1rem);
+  }
+  
+  .el-dialog__header {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+    padding: var(--spacing-base, 1rem);
+    
+    .el-dialog__title {
+      color: #fff;
+      font-size: clamp(1rem, 1.5vw, 1.125rem);
+    }
+  }
+  
+  .el-dialog__footer {
+    flex-shrink: 0;
+    padding: var(--spacing-base, 1rem);
+  }
 }
 
 :deep(.el-descriptions) {
-  padding: 15px;
-}
-
-:deep(.el-descriptions .el-descriptions__label) {
-  color: #626270;
-}
-
-:deep(.el-descriptions .el-descriptions__content) {
-  color: #2F2F38;
-}
-
-.sync-code-input {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sync-buttons {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.sync-buttons-left {
-  display: flex;
-  gap: 8px;
-}
-
-.sync-buttons-right {
-  display: flex;
-  gap: 8px;
-}
-
-.sync-tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
-  line-height: 1.4;
-}
-
-:deep(.sync-dialog .el-dialog) {
-  max-width: 360px;
-  margin: 0 auto;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-:deep(.sync-dialog .el-dialog__header) {
-  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
-  padding: 15px 20px;
-  margin-right: 0;
-}
-
-:deep(.sync-dialog .el-dialog__title) {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-:deep(.sync-dialog .el-dialog__body) {
-  padding: 15px;
-}
-
-:deep(.sync-dialog .el-form-item__label) {
-  padding-bottom: 4px;
-}
-
-:deep(.sync-dialog .el-input__wrapper) {
-  max-width: 100%;
-}
-
-:deep(.sync-dialog .el-textarea__inner) {
-  font-family: monospace;
-  font-size: 14px;
-  word-break: break-all;
-  white-space: pre-wrap;
-}
-
-.sync-actions {
-  display: flex;
-  justify-content: center;
-  gap: 0;  /* 移除按钮之间的间距 */
-  padding: 8px;
-  background: #FFFFFF;
-  border-radius: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin: 0;
-  flex-shrink: 0;
-}
-
-:deep(.el-button--success) {
-  background: linear-gradient(135deg, #67C23A 0%, #85CE61 100%);
-  border: none;
-  padding: 8px 16px;
-  transition: all 0.3s ease;
-}
-
-:deep(.el-button--success:hover) {
-  background: linear-gradient(135deg, #85CE61 0%, #95D475 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(103, 194, 58, 0.2);
-}
-
-:deep(.el-button--success.is-disabled) {
-  background: #b3e19d;
-  border-color: #b3e19d;
-}
-
-:deep(.el-button--success.is-disabled:hover) {
-  background: #b3e19d;
-  border-color: #b3e19d;
-  transform: none;
-  box-shadow: none;
-}
-
-:deep(.el-table) {
-  flex: 1;
-  margin: 0 !important;
-  border-radius: 0 !important;
-  height: calc(100vh - 200px); /* 动态计算表格高度 */
-  max-height: calc(100vh - 200px);
-}
-
-:deep(.el-table__body-wrapper) {
-  overflow-y: auto;
-  height: calc(100% - 40px); /* 减去表头高度 */
-}
-
-:deep(.child-dialog) {
-  .el-dialog {
-    max-width: 90%;
-    width: 360px !important;
-    margin: 15px auto !important;
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100vh - 30px); /* 限制最大高度 */
-    
-    .el-dialog__body {
-      overflow-y: auto; /* 内容过多时可滚动 */
-      flex: 1;
-      padding: 20px;
-    }
-    
-    .el-dialog__header {
-      flex-shrink: 0;
-    }
-    
-    .el-dialog__footer {
-      flex-shrink: 0;
-    }
+  padding: var(--spacing-base, 1rem);
+  
+  .el-descriptions__label {
+    color: #626270;
+    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
   }
-}
-
-:deep(.sync-dialog) {
-  .el-dialog {
-    max-width: 90%;
-    width: 360px !important;
-    margin: 15px auto !important;
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100vh - 30px);
-    
-    .el-dialog__body {
-      overflow-y: auto;
-      flex: 1;
-      padding: 15px;
-    }
-    
-    .el-dialog__header {
-      flex-shrink: 0;
-    }
-    
-    .el-dialog__footer {
-      flex-shrink: 0;
-    }
-  }
-
-  .el-button {
-    padding: 8px 12px;
-    margin: 0;  /* 移除按钮的外边距 */
-    border-radius: 0;  /* 移除圆角 */
-    
-    &:first-child {
-      border-top-left-radius: 4px;  /* 只给最左边的按钮左边圆角 */
-      border-bottom-left-radius: 4px;
-    }
-    
-    &:last-child {
-      border-top-right-radius: 4px;  /* 只给最右边的按钮右边圆角 */
-      border-bottom-right-radius: 4px;
-    }
-    
-    .el-icon {
-      margin-right: 4px;
-    }
+  
+  .el-descriptions__content {
+    color: #2F2F38;
+    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
   }
 }
 
@@ -701,5 +491,46 @@ const copySyncCode = async () => {
   justify-content: center;
   align-items: center;
   margin: 0;
+  padding: clamp(1rem, 4vw, 2rem);
+}
+
+.sync-tip {
+  font-size: clamp(0.75rem, 1.25vw, 0.875rem);
+  color: #909399;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+:deep(.sync-dialog), :deep(.child-dialog) {
+  .el-form-item__label {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    padding-bottom: 0.25rem;
+  }
+  
+  .el-input__wrapper {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+  }
+  
+  .el-textarea__inner {
+    font-family: monospace;
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    word-break: break-all;
+    white-space: pre-wrap;
+  }
+}
+
+.sync-actions {
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.5rem, 2vw, 1rem);
+  margin-top: var(--spacing-base, 1rem);
+  
+  @media screen and (max-width: 576px) {
+    flex-direction: column;
+    
+    .el-button {
+      width: 100%;
+    }
+  }
 }
 </style>

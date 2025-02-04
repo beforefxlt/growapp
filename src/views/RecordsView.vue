@@ -757,158 +757,127 @@ const formatImportTimestamp = (timestamp) => {
 
 .records-header {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
   margin: 0;
-  padding: 15px;
+  padding: var(--spacing-base, 1rem);
   background: #FFFFFF;
-  border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  flex-shrink: 0; /* 防止头部压缩 */
+  flex-shrink: 0;
 }
 
-/* 添加内容容器样式 */
+.center-title {
+  margin: 0 0 var(--spacing-base, 1rem) 0;
+  color: #2F2F38;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+}
+
+.header-buttons {
+  display: flex;
+  gap: clamp(0.5rem, 2vw, 1rem);
+  width: 100%;
+  justify-content: center;
+  
+  @media screen and (max-width: 576px) {
+    flex-direction: column;
+  }
+}
+
+.header-buttons .el-button {
+  flex: 1;
+  max-width: clamp(120px, 30vw, 160px);
+  
+  @media screen and (max-width: 576px) {
+    max-width: none;
+  }
+}
+
 .records-content {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 8px 0;
+  padding: var(--spacing-base, 1rem);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-base, 1rem);
 }
 
 .date-cell, .age-cell, .value-cell {
   display: inline-flex;
   align-items: center;
-  height: 28px;
+  height: clamp(24px, 4vh, 32px);
   white-space: nowrap;
-  font-size: 13px;
+  font-size: clamp(0.75rem, 1.25vw, 0.875rem);
   padding-left: 1px;
 }
 
 .value-cell {
-  padding-left: 8px;
+  padding-left: 0.5rem;
 }
 
 .time-text {
-  font-size: 13px;
+  font-size: clamp(0.75rem, 1.25vw, 0.875rem);
   color: #909399;
-  margin-left: 2px;
+  margin-left: 0.125rem;
 }
 
 .unit {
-  font-size: 13px;
+  font-size: clamp(0.75rem, 1.25vw, 0.875rem);
   color: #909399;
-  margin-left: 1px;
+  margin-left: 0.125rem;
 }
 
 :deep(.el-table) {
   --el-table-header-bg-color: #F4F5F7;
   --el-table-row-hover-bg-color: #F6F6FB;
-  padding-right: 0;
-  margin-right: 0;
   
   .el-table__header-wrapper {
     th {
       padding: 0 !important;
-      height: 28px;
-      line-height: 28px;
-      font-size: 13px;
+      height: clamp(24px, 4vh, 32px);
+      line-height: clamp(24px, 4vh, 32px);
+      font-size: clamp(0.75rem, 1.25vw, 0.875rem);
     }
   }
   
   .el-table__row {
     td {
       padding: 0 !important;
-      height: 28px;
-      line-height: 28px;
-      font-size: 13px;
+      height: clamp(24px, 4vh, 32px);
+      line-height: clamp(24px, 4vh, 32px);
+      font-size: clamp(0.75rem, 1.25vw, 0.875rem);
     }
   }
 }
 
-.records-header-left {
+.sync-actions {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-left: 15px;
-}
-
-.records-header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding-right: 15px;
-}
-
-.records-title {
+  justify-content: center;
+  gap: 0;
+  padding: var(--spacing-base, 1rem);
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   margin: 0;
-  color: #2F2F38;
-  font-weight: 500;
-  font-size: 18px;
-  min-width: 72px;
-}
-
-.action-buttons {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-:deep(.el-table .el-table__header th) {
-  background-color: #F4F5F7;
-  color: #626270;
-  font-weight: 500;
-}
-
-:deep(.el-table .el-table__row) {
-  background-color: #FFFFFF;
-}
-
-:deep(.el-table .el-table__row:hover) {
-  background-color: #F6F6FB;
-}
-
-:deep(.el-table__cell) {
-  padding: 0 !important;
-}
-
-:deep(.el-table__inner-wrapper) {
-  padding: 0 !important;
-}
-
-:deep(.el-table__body) td {
-  padding: 0 !important;
-}
-
-:deep(.el-button-group) {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
+  flex-shrink: 0;
   
-  .el-button + .el-button {
-    margin-left: 0;
-  }
-}
-
-:deep(.el-button.is-link) {
-  padding: 4px;
-  height: 24px;
-  width: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  .el-icon {
-    font-size: 14px;
+  @media screen and (max-width: 576px) {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
 
 :deep(.el-button--primary) {
   background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
   border: none;
-  padding: 8px 16px;
+  padding: clamp(0.5rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
   transition: all 0.3s ease;
   
   &:hover {
@@ -918,54 +887,33 @@ const formatImportTimestamp = (timestamp) => {
   }
 }
 
-:deep(.record-dialog) {
-  .el-dialog {
-    max-width: 90%;
-    width: 360px !important;
-    margin: 15px auto !important;
-    display: flex;
-    flex-direction: column;
-    max-height: calc(100vh - 30px); /* 限制最大高度 */
+:deep(.el-dialog) {
+  width: clamp(300px, 90vw, 360px) !important;
+  margin: var(--spacing-base, 1rem) auto !important;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  
+  .el-dialog__body {
+    overflow-y: auto;
+    flex: 1;
+    padding: var(--spacing-base, 1rem);
+  }
+  
+  .el-dialog__header {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+    padding: var(--spacing-base, 1rem);
     
-    .el-dialog__body {
-      overflow-y: auto; /* 内容过多时可滚动 */
-      flex: 1;
-      padding: 20px;
-    }
-    
-    .el-dialog__header {
-      flex-shrink: 0;
-    }
-    
-    .el-dialog__footer {
-      flex-shrink: 0;
+    .el-dialog__title {
+      color: #fff;
+      font-size: clamp(1rem, 1.5vw, 1.125rem);
     }
   }
-}
-
-.csv-actions {
-  display: flex;
-  justify-content: center;
-  gap: 16px;
-  padding: 15px 0;
-  background: #FFFFFF;
-  border-radius: 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-top: 0;
-  flex-shrink: 0;
-}
-
-:deep(.el-button--primary.is-plain) {
-  background: #fff;
-  border: 1px solid #807CA5;
-  color: #807CA5;
   
-  &:hover {
-    background: #F4F5F7;
-    color: #9DA0C5;
-    border-color: #9DA0C5;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.1);
+  .el-dialog__footer {
+    flex-shrink: 0;
+    padding: var(--spacing-base, 1rem);
   }
 }
 
@@ -976,21 +924,13 @@ const formatImportTimestamp = (timestamp) => {
   justify-content: center;
   align-items: center;
   margin: 0;
+  padding: clamp(1rem, 4vw, 2rem);
 }
 
-.edit-icon {
-  font-size: 13px;
-  color: #807CA5;
-  pointer-events: none;
-  padding: 0;
-  margin: 0;
-}
-
-:deep(.el-table__row) td:last-child {
-  padding: 0 !important;
-}
-
-:deep(.el-table__header) th {
-  padding: 0 !important;
+.sync-tip {
+  font-size: clamp(0.75rem, 1.25vw, 0.875rem);
+  color: #909399;
+  margin-top: 0.25rem;
+  line-height: 1.4;
 }
 </style>

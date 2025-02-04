@@ -200,37 +200,36 @@ watch([chartType, currentChild], updateChart)
   box-sizing: border-box;
   background-color: #F6F6FB;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .home-header {
-  padding: 15px;
+  padding: var(--spacing-base, 1rem);
   background: #FFFFFF;
-  border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-base, 1rem);
 }
 
 .center-title {
   text-align: center;
   margin: 0;
   color: #2F2F38;
-  font-size: 18px;
+  font-size: clamp(1rem, 2vw, 1.25rem);
   font-weight: 500;
 }
 
 .child-info {
   margin: 0;
-  padding: 15px;
+  padding: var(--spacing-base, 1rem);
   background: #FFFFFF;
-  border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .chart-container {
   background: #FFFFFF;
-  padding: 15px;
+  padding: var(--spacing-base, 1rem);
   margin: 0;
-  border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   width: 100%;
   box-sizing: border-box;
@@ -244,15 +243,25 @@ watch([chartType, currentChild], updateChart)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 15px;
+  padding-bottom: var(--spacing-base, 1rem);
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0;
+  gap: 0.5rem;
+  
+  @media screen and (max-width: 576px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
   
   :deep(.el-button) {
-    margin-left: 10px;
+    margin-left: 0;
     background: #807CA5;
     border: none;
+    
+    @media screen and (max-width: 576px) {
+      width: 100%;
+    }
     
     &:hover {
       background: #9DA0C5;
@@ -260,14 +269,18 @@ watch([chartType, currentChild], updateChart)
   }
   
   :deep(.el-select) {
-    width: 120px;
+    width: clamp(120px, 30vw, 200px);
+    
+    @media screen and (max-width: 576px) {
+      width: 100%;
+    }
   }
 }
 
 .chart {
   flex: 1;
   width: 100%;
-  min-height: 300px;
+  min-height: clamp(250px, 50vh, 500px);
   position: relative;
 }
 
@@ -277,22 +290,24 @@ watch([chartType, currentChild], updateChart)
   .el-descriptions__title {
     color: #2F2F38;
     font-weight: 500;
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
   }
   
   .el-descriptions__label {
     color: #606266;
+    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
   }
   
   .el-descriptions__content {
     color: #2F2F38;
+    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
   }
 }
 
 :deep(.el-empty) {
   background: #fff;
-  border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: 32px;
+  padding: clamp(1rem, 4vw, 2rem);
   margin: 0;
 }
 
@@ -310,6 +325,8 @@ watch([chartType, currentChild], updateChart)
 :deep(.el-button--primary) {
   background: #807CA5;
   border: none;
+  padding: clamp(0.5rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
   
   &:hover {
     background: #9DA0C5;
