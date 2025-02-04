@@ -10,11 +10,13 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
-      external: ['echarts'],
       output: {
-        globals: {
-          echarts: 'echarts'
+        manualChunks: {
+          'vendor': ['vue', 'vue-router', 'pinia'],
+          'echarts': ['echarts'],
+          'element-plus': ['element-plus']
         }
       }
     }

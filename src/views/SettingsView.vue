@@ -361,9 +361,8 @@ const copySyncCode = async () => {
   flex-direction: column;
   gap: 1rem;
   align-items: stretch;
-  max-width: 95%;
-  margin: 0 auto;
   width: 100%;
+  margin: 0 auto;
   box-sizing: border-box;
 }
 
@@ -372,7 +371,6 @@ const copySyncCode = async () => {
   justify-content: center;
   gap: 1rem;
   width: 100%;
-  max-width: 400px;
   margin: 0 auto;
   
   @media screen and (max-width: 576px) {
@@ -392,6 +390,7 @@ const copySyncCode = async () => {
   flex-direction: column;
   gap: 1rem;
   width: 100%;
+  margin: 0 auto;
 }
 
 .child-card {
@@ -399,6 +398,7 @@ const copySyncCode = async () => {
   border-radius: 8px;
   transition: all 0.3s ease;
   width: 100%;
+  box-sizing: border-box;
   
   &:hover {
     transform: translateY(-2px);
@@ -533,8 +533,14 @@ const copySyncCode = async () => {
 
 /* Dialog styles */
 :deep(.el-dialog) {
+  width: 98% !important;
+  margin: 0 auto;
   border-radius: 12px;
   overflow: hidden;
+  
+  @media screen and (max-width: 576px) {
+    width: 99% !important;
+  }
   
   .el-dialog__header {
     margin: 0;
@@ -564,17 +570,12 @@ const copySyncCode = async () => {
 
 /* Form styles */
 :deep(.el-form-item) {
-  margin-bottom: 1.5rem;
-  
-  .el-form-item__label {
-    font-weight: 500;
-    color: #2F2F38;
-  }
+  width: 100%;
   
   .el-input__wrapper,
   .el-select,
   .el-date-editor {
-    width: 100%;
+    width: 100% !important;
   }
 }
 
@@ -603,6 +604,15 @@ const copySyncCode = async () => {
     @media screen and (max-width: 576px) {
       width: 100%;
     }
+  }
+}
+
+/* 同步对话框样式 */
+.sync-dialog {
+  :deep(.el-select),
+  :deep(.el-input),
+  :deep(.el-textarea) {
+    width: 100% !important;
   }
 }
 </style>

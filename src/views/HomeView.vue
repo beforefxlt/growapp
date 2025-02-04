@@ -6,7 +6,7 @@
 
     <template v-else>
       <div class="child-info">
-        <el-descriptions :column="3" border>
+        <el-descriptions :column="3" border size="small">
           <el-descriptions-item label="姓名">{{ currentChild.name }}</el-descriptions-item>
           <el-descriptions-item label="性别">{{ currentChild.gender === 'male' ? '男' : '女' }}</el-descriptions-item>
           <!-- <el-descriptions-item label="出生日期">{{ currentChild.birthDate }}</el-descriptions-item> -->
@@ -202,6 +202,7 @@ watch([chartType, currentChild], updateChart)
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
 
 .home-header {
@@ -221,15 +222,18 @@ watch([chartType, currentChild], updateChart)
 
 .child-info {
   margin: 0;
-  padding: var(--spacing-base, 1rem);
+  padding: 4px;
   background: #FFFFFF;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .chart-container {
   background: #FFFFFF;
-  padding: var(--spacing-base, 1rem);
-  margin: 0;
+  padding: 8px;
+  margin: 0 auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   width: 100%;
   box-sizing: border-box;
@@ -243,36 +247,61 @@ watch([chartType, currentChild], updateChart)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: var(--spacing-base, 1rem);
+  padding-bottom: 8px;
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0;
-  gap: 0.5rem;
+  gap: 8px;
   
   @media screen and (max-width: 576px) {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
   }
   
   :deep(.el-button) {
     margin-left: 0;
-    background: #807CA5;
-    border: none;
+    background: transparent;
+    border: 1.5px solid #807CA5;
+    color: #807CA5;
+    width: 50%;
+    border-radius: 0;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-weight: 500;
     
-    @media screen and (max-width: 576px) {
-      width: 100%;
+    .el-icon {
+      font-size: 14px;
+      transition: transform 0.2s ease;
     }
     
     &:hover {
-      background: #9DA0C5;
+      background: rgba(128, 124, 165, 0.1);
+      border-color: #9DA0C5;
+      color: #9DA0C5;
+      
+      .el-icon {
+        transform: scale(1.1);
+      }
+    }
+    
+    @media screen and (max-width: 576px) {
+      width: 50%;
     }
   }
   
   :deep(.el-select) {
-    width: clamp(120px, 30vw, 200px);
+    width: 50%;
     
     @media screen and (max-width: 576px) {
-      width: 100%;
+      width: 50%;
+    }
+
+    .el-input__wrapper {
+      border-radius: 0;
     }
   }
 }
@@ -285,30 +314,32 @@ watch([chartType, currentChild], updateChart)
 }
 
 :deep(.el-descriptions) {
+  width: 100%;
   padding: 0;
+  margin: 0;
   
-  .el-descriptions__title {
-    color: #2F2F38;
-    font-weight: 500;
-    font-size: clamp(0.875rem, 1.5vw, 1rem);
+  .el-descriptions__body {
+    padding: 0;
+    width: 100%;
   }
   
   .el-descriptions__label {
-    color: #606266;
-    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
+    padding: 2px 4px;
+    background-color: #F6F6FB;
   }
   
   .el-descriptions__content {
-    color: #2F2F38;
-    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
+    padding: 2px 4px;
   }
 }
 
 :deep(.el-empty) {
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  padding: clamp(1rem, 4vw, 2rem);
-  margin: 0;
+  box-sizing: border-box;
 }
 
 /* 修改图表的默认配色 */
@@ -323,13 +354,30 @@ watch([chartType, currentChild], updateChart)
 }
 
 :deep(.el-button--primary) {
-  background: #807CA5;
-  border: none;
-  padding: clamp(0.5rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
-  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  background: transparent !important;
+  border: 1.5px solid #807CA5 !important;
+  color: #807CA5 !important;
+  border-radius: 0 !important;
+  padding: 8px 16px !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-weight: 500 !important;
+  
+  .el-icon {
+    font-size: 14px;
+    transition: transform 0.2s ease;
+  }
   
   &:hover {
-    background: #9DA0C5;
+    background: rgba(128, 124, 165, 0.1) !important;
+    border-color: #9DA0C5 !important;
+    color: #9DA0C5 !important;
+    
+    .el-icon {
+      transform: scale(1.1);
+    }
   }
 }
 </style>

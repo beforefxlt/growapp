@@ -64,7 +64,7 @@
     <el-dialog
       v-model="showAddDialog"
       :title="isEditing ? '编辑记录' : '添加记录'"
-      width="90%"
+      width="98%"
       class="record-dialog"
     >
       <el-form :model="form" label-width="100px">
@@ -315,10 +315,8 @@ const handleRowClick = (row) => {
   box-sizing: border-box;
   background-color: #F6F6FB;
   min-height: 100vh;
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .records-header {
@@ -340,14 +338,10 @@ const handleRowClick = (row) => {
 
 .records-content {
   flex: 1;
-  overflow-y: auto;
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-start;
-  max-width: 95%;
-  margin: 0 auto;
+  gap: 1rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -358,7 +352,7 @@ const handleRowClick = (row) => {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   padding: 0;
-  margin: 0;
+  margin: 0 0.5rem;
   box-sizing: border-box;
   
   .el-button {
@@ -389,7 +383,8 @@ const handleRowClick = (row) => {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   padding: 0;
-  width: 100%;
+  margin: 0 0.5rem;
+  width: calc(100% - 1rem);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -398,33 +393,22 @@ const handleRowClick = (row) => {
   --el-table-header-bg-color: #F4F5F7;
   --el-table-row-hover-bg-color: #F6F6FB;
   
-  .el-table__header-wrapper {
-    th {
-      background: #F4F5F7;
-      color: #606266;
-      font-weight: 600;
-      font-size: 0.875rem;
-      padding: 8px 0.5rem;
-      border-bottom: 1px solid #EBEEF5;
-      height: 32px;
-      line-height: 1;
-    }
+  :is(th) {
+    background-color: #F6F6FB;
+    color: #2F2F38;
+    font-weight: 500;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #E5E7EB;
   }
   
-  .el-table__row {
-    cursor: pointer;
-    
-    td {
-      padding: 4px 0.5rem;
-      border-bottom: 1px solid #F5F7FA;
-      height: 32px;
-    }
-    
-    &:hover {
-      td {
-        background: #F6F6FB;
-      }
-    }
+  :is(td) {
+    padding: 8px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+
+  :is(td).actions {
+    text-align: right;
   }
 }
 
@@ -447,9 +431,9 @@ const handleRowClick = (row) => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: 100%;
+  width: calc(100% - 1rem);
   padding: 0;
-  margin: 0;
+  margin: 0 0.5rem;
   box-sizing: border-box;
   
   .el-button {
@@ -485,9 +469,14 @@ const handleRowClick = (row) => {
 
 /* Empty状态的按钮保持居中 */
 :deep(.el-empty) {
-  .el-button {
-    justify-content: center;
-  }
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
 }
 
 /* Dialog styles */

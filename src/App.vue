@@ -1,6 +1,6 @@
 <template>
   <el-container class="app-container">
-    <el-header>
+    <el-header class="app-header">
       <el-menu
         :router="false"
         mode="horizontal"
@@ -61,14 +61,15 @@ const handleSelect = (key) => {
 }
 </script>
 
-<style>
+<style scoped>
 .app-container {
   min-height: 100vh;
 }
 
-.el-header {
+.app-header {
   padding: 0;
   border-bottom: 1px solid #eee;
+  height: 70px !important;
 }
 
 .nav-menu {
@@ -76,26 +77,38 @@ const handleSelect = (key) => {
   justify-content: space-around;
   width: 100%;
   border-bottom: none;
+  height: 70px !important;
+  background-color: #ffffff !important;
 }
 
-.nav-item {
+.nav-menu :deep(.nav-item) {
   flex: 1;
   text-align: center;
   padding: 0 !important;
   display: flex;
   justify-content: center;
   align-items: center;
+  line-height: 70px !important;
+  height: 70px !important;
 }
 
-:deep(.el-menu-item) {
-  font-size: 16px;
+.nav-menu :deep(.el-menu-item) {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  height: 70px !important;
+  color: #606266 !important;
+  padding: 0 24px !important;
 }
 
-:deep(.el-menu--horizontal > .el-menu-item.is-active) {
-  border-bottom: 2px solid var(--el-menu-active-color);
+.nav-menu :deep(.el-menu--horizontal > .el-menu-item.is-active) {
+  border-bottom: 3px solid var(--el-color-primary) !important;
+  color: var(--el-color-primary) !important;
+  font-weight: 800 !important;
 }
 
-:deep(.el-icon) {
-  margin-right: 4px;
+.nav-menu :deep(.el-menu-item .el-icon) {
+  margin-right: 12px !important;
+  font-size: 24px !important;
+  margin-top: -2px !important;
 }
 </style>
