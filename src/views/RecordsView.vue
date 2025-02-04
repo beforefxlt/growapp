@@ -1,7 +1,6 @@
 <template>
   <div class="records-container">
     <div class="records-header">
-      <h2 class="center-title">生长记录</h2>
     </div>
 
     <div class="records-content">
@@ -10,9 +9,15 @@
       </el-empty>
 
       <template v-else>
-        <div class="action-button">
-          <el-button type="primary" @click="showAddDialog = true">
+        <div class="action-buttons">
+          <el-button class="btn-add" type="primary" @click="showAddDialog = true">
             <el-icon><Plus /></el-icon>添加记录
+          </el-button>
+          <el-button class="btn-export" type="primary" @click="exportToCsvHandler">
+            <el-icon><Upload /></el-icon>导出CSV
+          </el-button>
+          <el-button class="btn-import" type="primary" @click="importCsvHandler">
+            <el-icon><Download /></el-icon>导入CSV
           </el-button>
         </div>
 
@@ -59,15 +64,6 @@
               </template>
             </el-table-column>
           </el-table>
-        </div>
-
-        <div class="action-buttons">
-          <el-button type="primary" @click="exportToCsvHandler">
-            <el-icon><Upload /></el-icon>导出CSV
-          </el-button>
-          <el-button type="primary" @click="importCsvHandler">
-            <el-icon><Download /></el-icon>导入CSV
-          </el-button>
         </div>
       </template>
     </div>
@@ -310,49 +306,61 @@ const importCsvHandler = async () => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
   width: 100%;
   box-sizing: border-box;
+  background-color: #F6F6FB;
 }
 
-.action-button {
+.action-buttons {
+  display: flex;
   width: 100%;
-  background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-  padding: 0;
   margin: 0;
-  box-sizing: border-box;
-  
-  .el-button {
-    width: 100%;
-    height: 40px;
-    justify-content: center;
-    background: #FFFFFF;
-    border: 1px solid #DCDFE6;
-    color: #606266;
-    font-size: 1rem;
-    padding: 0 1rem;
-    border-radius: 8px;
-    
-    &:hover {
-      background: #F5F7FA;
-      border-color: #C6E2FF;
-      color: #409EFF;
-    }
-    
-    .el-icon {
-      margin-right: 8px;
-    }
+  padding: 0;
+  flex-direction: row;
+
+  :deep(.el-button) {
+    flex: 1;
+    height: 44px;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    font-size: 0.95rem;
+  }
+
+  :deep(.btn-add.el-button--primary) {
+    background-color: #4096FF !important;
+    color: #FFFFFF !important;
+  }
+  :deep(.btn-add.el-button--primary:hover),
+  :deep(.btn-add.el-button--primary:focus) {
+    background-color: #69B1FF !important;
+  }
+
+  :deep(.btn-export.el-button--primary) {
+    background-color: #52C41A !important;
+    color: #FFFFFF !important;
+  }
+  :deep(.btn-export.el-button--primary:hover),
+  :deep(.btn-export.el-button--primary:focus) {
+    background-color: #73D13D !important;
+  }
+
+  :deep(.btn-import.el-button--primary) {
+    background-color: #722ED1 !important;
+    color: #FFFFFF !important;
+  }
+  :deep(.btn-import.el-button--primary:hover),
+  :deep(.btn-import.el-button--primary:focus) {
+    background-color: #9254DE !important;
   }
 }
 
 .records-table {
+  margin-top: 1px;
   background: #FFFFFF;
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   padding: 0;
-  margin: 0;
   width: 100%;
   box-sizing: border-box;
   overflow: hidden;
@@ -394,39 +402,6 @@ const importCsvHandler = async () => {
   color: #909399;
   font-size: 0.75rem;
   margin-left: 2px;
-}
-
-.action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-  
-  .el-button {
-    width: 100%;
-    height: 40px;
-    justify-content: center;
-    background: #FFFFFF;
-    border: 1px solid #DCDFE6;
-    color: #606266;
-    padding: 0 1rem;
-    margin: 0;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-
-    &:hover {
-      background: #F5F7FA;
-      border-color: #C6E2FF;
-      color: #409EFF;
-    }
-
-    .el-icon {
-      margin-right: 8px;
-    }
-  }
 }
 
 /* 对话框按钮保持居中 */
@@ -525,5 +500,53 @@ const importCsvHandler = async () => {
       margin: 0;
     }
   }
+}
+</style>
+
+<!-- 添加全局样式块，确保更高优先级 -->
+<style>
+/* 使用更具体的选择器来提高优先级 */
+.records-container .action-buttons .btn-add.el-button--primary {
+  background-color: #4096FF !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+.records-container .action-buttons .btn-add.el-button--primary:hover,
+.records-container .action-buttons .btn-add.el-button--primary:focus {
+  background-color: #69B1FF !important;
+  border: none !important;
+}
+
+.records-container .action-buttons .btn-export.el-button--primary {
+  background-color: #52C41A !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+.records-container .action-buttons .btn-export.el-button--primary:hover,
+.records-container .action-buttons .btn-export.el-button--primary:focus {
+  background-color: #73D13D !important;
+  border: none !important;
+}
+
+.records-container .action-buttons .btn-import.el-button--primary {
+  background-color: #722ED1 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+.records-container .action-buttons .btn-import.el-button--primary:hover,
+.records-container .action-buttons .btn-import.el-button--primary:focus {
+  background-color: #9254DE !important;
+  border: none !important;
+}
+
+/* 共享的按钮基础样式 */
+.records-container .action-buttons .el-button {
+  flex: 1;
+  height: 44px;
+  margin: 0;
+  border: none !important;
+  border-radius: 0;
+  font-size: 0.95rem;
+  padding: 8px 16px !important;
 }
 </style>

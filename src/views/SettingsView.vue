@@ -9,9 +9,6 @@
         <el-button @click="showSyncDialog = true">
           <el-icon><Share /></el-icon>同步数据
         </el-button>
-      </div>
-
-      <div class="action-button">
         <el-button @click="showAddDialog = true">
           <el-icon><Plus /></el-icon>添加儿童
         </el-button>
@@ -52,6 +49,10 @@
             </div>
           </div>
         </el-card>
+      </div>
+
+      <div class="about-button">
+        <el-button @click="showAboutDialog = true">关于</el-button>
       </div>
     </div>
 
@@ -132,6 +133,18 @@
         </div>
       </el-form>
     </el-dialog>
+
+    <el-dialog
+      v-model="showAboutDialog"
+      title="关于"
+      width="90%"
+      class="about-dialog"
+    >
+      <div class="about-content">
+        <p class="version">版本号：1.0.0</p>
+        <p class="author">作者：fxlt</p>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -157,6 +170,7 @@ const editingChildId = ref(null)
 const showSyncDialog = ref(false)
 const syncCode = ref('')
 const selectedChildId = ref('')
+const showAboutDialog = ref(false)
 
 // 监听弹窗显示状态，当弹窗打开时，如果不是编辑模式就重置表单
 watch(showAddDialog, (newVal) => {
@@ -368,10 +382,11 @@ const copySyncCode = async () => {
 
 .action-button {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
+  justify-content: stretch;
   width: 100%;
-  margin: 0 auto;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
   
   @media screen and (max-width: 576px) {
     flex-direction: column;
@@ -379,9 +394,15 @@ const copySyncCode = async () => {
 
   .el-button {
     flex: 1;
-    width: 100%;
+    width: 50%;
     height: 40px;
     justify-content: center;
+    margin: 0;
+    border-radius: 0;
+    
+    @media screen and (max-width: 576px) {
+      width: 100%;
+    }
   }
 }
 
@@ -407,13 +428,13 @@ const copySyncCode = async () => {
 }
 
 .child-info {
-  padding: 1rem 0;
+  padding: 0.5rem 0;
 }
 
 .info-row {
   display: flex;
   align-items: center;
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
   border-bottom: 1px solid #F5F7FA;
   
   &:last-child {
@@ -422,7 +443,7 @@ const copySyncCode = async () => {
 }
 
 .info-label {
-  width: 80px;
+  width: 60px;
   color: #909399;
   font-size: 0.875rem;
 }
@@ -588,9 +609,10 @@ const copySyncCode = async () => {
 
 .sync-actions {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
+  justify-content: stretch;
+  gap: 0;
+  margin: 0;
+  width: 100%;
   
   @media screen and (max-width: 576px) {
     flex-direction: column;
@@ -598,8 +620,10 @@ const copySyncCode = async () => {
 
   .el-button {
     flex: 1;
-    min-width: 120px;
+    width: calc(100% / 3);
     height: 40px;
+    margin: 0;
+    border-radius: 0;
     
     @media screen and (max-width: 576px) {
       width: 100%;
@@ -613,6 +637,37 @@ const copySyncCode = async () => {
   :deep(.el-input),
   :deep(.el-textarea) {
     width: 100% !important;
+  }
+}
+
+.about-button {
+  margin: 0;
+  padding: 0;
+  
+  .el-button {
+    width: 100%;
+    height: 40px;
+    background: #FFFFFF;
+    border: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    border-radius: 0;
+  }
+}
+
+.about-content {
+  text-align: center;
+  padding: 1rem;
+  
+  .version, .author {
+    margin: 0.5rem 0;
+    color: #2F2F38;
+    font-size: 1rem;
+  }
+}
+
+.about-dialog {
+  :deep(.el-dialog__body) {
+    padding: 1rem;
   }
 }
 </style>
