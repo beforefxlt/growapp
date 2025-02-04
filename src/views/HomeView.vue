@@ -126,7 +126,7 @@ const updateChart = () => {
       name: '年龄（岁）',
       nameLocation: 'middle',
       nameGap: 30,
-      min: 0,  // 从0开始
+      min: 3,  // 从3岁开始
       max: Math.ceil(Math.max(...chartData.map(item => item.age))),  // 向上取整
       axisLabel: {
         formatter: function (value) {
@@ -139,7 +139,17 @@ const updateChart = () => {
       name: chartType.value === 'height' ? '身高（cm）' : '体重（kg）',
       nameLocation: 'middle',
       nameGap: 55,
-      min: chartType.value === 'height' ? 0 : null,  // 身高从0开始，体重保持自动
+      min: chartType.value === 'height' ? 50 : null,  // 身高从50cm开始，体重保持自动
+      max: function(value) {
+        const maxDataValue = Math.max(...chartData.map(item => item.value));
+        if (chartType.value === 'height') {
+          // 身高增加20cm的余量
+          return Math.ceil((maxDataValue + 20) / 10) * 10;
+        } else {
+          // 体重增加5kg的余量
+          return Math.ceil((maxDataValue + 5) / 5) * 5;
+        }
+      },
       axisLabel: {
         formatter: function(value) {
           return value + (chartType.value === 'height' ? 'cm' : 'kg')

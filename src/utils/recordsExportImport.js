@@ -133,15 +133,26 @@ export const exportToCsv = async (records, childName, FilePlugin) => {
       return
     }
 
-    // 准备CSV内容
-    const rows = records.map(record => {
-      const formattedDate = formatDate(record.date, 'YYYY-MM-DD HH:mm')
-      return [
-        formattedDate,
-        record.height.toFixed(1),
-        record.weight ? record.weight.toFixed(2) : ''
-      ]
+    // 按日期时间（精确到小时）进行去重
+    const uniqueRecords = new Map()
+    records.forEach(record => {
+      const dateKey = getDateTimeHourKey(new Date(record.date))
+      if (!uniqueRecords.has(dateKey) || new Date(record.date) > new Date(uniqueRecords.get(dateKey).date)) {
+        uniqueRecords.set(dateKey, record)
+      }
     })
+
+    // 准备CSV内容
+    const rows = Array.from(uniqueRecords.values())
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .map(record => {
+        const formattedDate = formatDate(record.date, 'YYYY-MM-DD HH:mm')
+        return [
+          formattedDate,
+          record.height.toFixed(1),
+          record.weight ? record.weight.toFixed(2) : ''
+        ]
+      })
     
     const csvContent = [
       '日期,身高(cm),体重(kg)',

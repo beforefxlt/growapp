@@ -30,15 +30,7 @@ export const useRecordsStore = defineStore('records', {
         this.records[childId] = []
       }
 
-      // 检查是否存在同一时间的记录
-      const existingRecord = this.hasRecordAtTime(childId, record.date)
-      if (existingRecord) {
-        // 如果存在，更新现有记录
-        this.updateRecord(childId, existingRecord.id, record)
-        return
-      }
-
-      // 如果不存在，添加新记录
+      // 直接添加新记录，不检查时间重复
       const id = Date.now().toString()
       this.records[childId].push({
         ...record,

@@ -20,7 +20,6 @@
           <el-table 
             :data="sortedRecords" 
             style="width: 100%"
-            @row-click="handleRowClick"
           >
             <el-table-column prop="date" label="测量日期" min-width="120" align="left">
               <template #default="{ row }">
@@ -30,21 +29,33 @@
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="年龄" min-width="80" align="left">
+            <el-table-column label="年龄" min-width="100" align="left">
               <template #default="{ row }">
                 <div class="age-cell">
                   {{ calculateAgeText(row.date, currentChild.birthDate).replace('..', '') }}
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="身高" min-width="60" align="left">
+            <el-table-column label="身高" min-width="100" align="left">
               <template #default="{ row }">
                 <div class="value-cell">{{ row.height }}<span class="unit">cm</span></div>
               </template>
             </el-table-column>
-            <el-table-column label="体重" min-width="60" align="left">
+            <el-table-column label="体重" min-width="100" align="left">
               <template #default="{ row }">
                 <div class="value-cell">{{ row.weight }}<span class="unit">kg</span></div>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="100" align="right" fixed="right">
+              <template #default="{ row }">
+                <div class="action-cell">
+                  <el-button type="primary" size="small" @click.stop="editRecord(row)">
+                    <el-icon><Edit /></el-icon>
+                  </el-button>
+                  <el-button type="danger" size="small" @click.stop="deleteRecord(row)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -163,28 +174,11 @@ const sortedRecords = computed(() => {
   console.log('sortedRecords currentChild:', currentChild.value)
   if (!currentChild.value) return []
   
-  // 获取所有记录并按创建时间排序
+  // 获取所有记录并按时间排序（最新的在前）
   const records = [...recordsStore.getChildRecords(currentChild.value.id)]
   console.log('records:', records)
   
-  // 使用Map进行去重，以日期时间（精确到小时）为key
-  const uniqueRecords = new Map()
-  
-  // 遍历排序后的记录（最新的记录会先被处理）
-  records.forEach(record => {
-    // 将日期时间格式化到小时
-    const dateObj = new Date(record.date)
-    const dateKey = getDateTimeHourKey(dateObj)
-    
-    // 由于已经按创建时间排序，如果key不存在，就是最新的记录
-    if (!uniqueRecords.has(dateKey)) {
-      uniqueRecords.set(dateKey, record)
-    }
-  })
-  
-  // 转换回数组并按记录时间排序
-  return Array.from(uniqueRecords.values())
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+  return records.sort((a, b) => new Date(b.date) - new Date(a.date))
 })
 
 const resetForm = () => {
@@ -205,52 +199,30 @@ const editRecord = (row) => {
 }
 
 const deleteRecord = (record) => {
-  ElMessageBox.confirm('确定要删除这条记录吗？', '提示', {
-    type: 'warning'
-  }).then(() => {
+  ElMessageBox.confirm(
+    '确定要删除这条记录吗？删除后无法恢复。',
+    '删除确认',
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
     recordsStore.deleteRecord(currentChild.value.id, record.id)
+    ElMessage.success('记录已删除')
+  }).catch(() => {
+    // 用户取消删除
   })
 }
 
 const saveRecord = () => {
-  // 将表单日期格式化到小时
-  const formDateKey = getDateTimeHourKey(new Date(form.value.date))
-
-  const existingRecords = recordsStore.getChildRecords(currentChild.value.id)
-  const sameTimeRecord = existingRecords.find(r => {
-    const recordDateKey = getDateTimeHourKey(new Date(r.date))
-    return recordDateKey === formDateKey
-  })
-
-  if (sameTimeRecord && !isEditing.value) {
-    // 如果存在同一小时的记录且不是编辑模式，提示用户
-    ElMessageBox.confirm(
-      '当前时间已存在记录，是否覆盖？',
-      '提示',
-      {
-        confirmButtonText: '覆盖',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    ).then(() => {
-      // 用户确认覆盖，更新现有记录
-      recordsStore.updateRecord(currentChild.value.id, sameTimeRecord.id, form.value)
-      showAddDialog.value = false
-      resetForm()
-    }).catch(() => {
-      // 用户取消操作
-      ElMessage.info('已取消添加')
-    })
+  if (isEditing.value) {
+    recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, form.value)
   } else {
-    // 没有重复记录或是编辑模式，直接保存
-    if (isEditing.value) {
-      recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, form.value)
-    } else {
-      recordsStore.addRecord(currentChild.value.id, form.value)
-    }
-    showAddDialog.value = false
-    resetForm()
+    recordsStore.addRecord(currentChild.value.id, form.value)
   }
+  showAddDialog.value = false
+  resetForm()
 }
 
 const exportToCsvHandler = async () => {
@@ -273,37 +245,34 @@ const importCsvHandler = async () => {
       const records = await processFileContent(rows, recordsStore, childrenStore)
       // 处理导入的记录
       let addedCount = 0
-      let updatedCount = 0
       let skippedCount = 0
 
       records.forEach(record => {
         const existingRecord = recordsStore.hasRecordAtTime(currentChild.value.id, record.date)
         
         if (!existingRecord) {
+          // 只有在记录不存在时才添加
           recordsStore.addRecord(currentChild.value.id, record)
           addedCount++
-        } else if (existingRecord.height !== record.height || existingRecord.weight !== record.weight) {
-          recordsStore.updateRecord(currentChild.value.id, existingRecord.id, record)
-          updatedCount++
         } else {
+          // 如果记录已存在，直接跳过
           skippedCount++
         }
       })
 
       const resultMessage = []
       if (addedCount > 0) resultMessage.push(`新增${addedCount}条记录`)
-      if (updatedCount > 0) resultMessage.push(`更新${updatedCount}条记录`)
-      if (skippedCount > 0) resultMessage.push(`跳过${skippedCount}条重复记录`)
+      if (skippedCount > 0) resultMessage.push(`跳过${skippedCount}条已存在的记录`)
 
-      ElMessage.success(`导入成功：${resultMessage.join('，')}`)
+      if (addedCount === 0) {
+        ElMessage.info('没有新的记录需要导入')
+      } else {
+        ElMessage.success(`导入成功：${resultMessage.join('，')}`)
+      }
     })
   } catch (error) {
     ElMessage.error('导入失败：' + error.message)
   }
-}
-
-const handleRowClick = (row) => {
-  editRecord(row);
 }
 </script>
 
@@ -538,6 +507,23 @@ const handleRowClick = (row) => {
   .el-select,
   .el-date-editor {
     width: 100%;
+  }
+}
+
+.action-cell {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  
+  .el-button {
+    padding: 4px;
+    height: 28px;
+    width: 28px;
+    min-width: unset;
+    
+    .el-icon {
+      margin: 0;
+    }
   }
 }
 </style>

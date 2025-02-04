@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useChildrenStore } from './children'
 import { useRecordsStore } from './records'
+import { getDateTimeHourKey } from '../utils/dateUtils'
 
 export const useSyncStore = defineStore('sync', {
   actions: {
@@ -86,26 +87,34 @@ export const useSyncStore = defineStore('sync', {
         }
 
         // 合并记录
+        let addedCount = 0;
+        let skippedCount = 0;
+
         syncData.records.forEach(record => {
-          const existingRecord = recordsStore.getChildRecords(existingChild ? existingChild.id : syncData.child.id)
-            .find(r => r.date === record.date)
+          const targetChildId = existingChild ? existingChild.id : syncData.child.id;
+          const existingRecord = recordsStore.hasRecordAtTime(targetChildId, record.date);
           
           if (!existingRecord) {
-            // 如果记录不存在，添加新记录
-            recordsStore.addRecord(existingChild ? existingChild.id : syncData.child.id, record)
+            // 只有在记录不存在时才添加
+            recordsStore.addRecord(targetChildId, record)
+            addedCount++;
           } else {
-            // 如果记录已存在，保留最新的记录
-            const existingDate = new Date(existingRecord.date)
-            const newDate = new Date(record.date)
-            if (newDate > existingDate) {
-              recordsStore.updateRecord(existingChild ? existingChild.id : syncData.child.id, existingRecord.id, record)
-            }
+            // 如果记录已存在，直接跳过
+            skippedCount++;
           }
         })
 
+        const resultMessage = [];
+        if (addedCount > 0) {
+          resultMessage.push(`新增${addedCount}条记录`);
+        }
+        if (skippedCount > 0) {
+          resultMessage.push(`跳过${skippedCount}条已存在的记录`);
+        }
+
         return {
           success: true,
-          message: `成功同步 ${syncData.records.length} 条记录`
+          message: addedCount === 0 ? '没有新的记录需要导入' : resultMessage.join('，')
         }
       } catch (error) {
         return {
