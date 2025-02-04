@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
@@ -78,21 +78,57 @@ const formatAgeDisplay = (age) => {
   return months > 0 ? `${years}岁${months}个月` : `${years}岁`
 }
 
+// 统一管理 dataZoom 配置
+const getDataZoomConfig = () => ([
+  {
+    type: 'inside',
+    xAxisIndex: 0,
+    filterMode: 'none',
+    minSpan: 5,
+    maxSpan: 100,
+    start: 0,
+    end: 100,
+    throttle: 600,
+    rangeMode: ['value', 'value'],
+    preventDefault: true,
+    zoomLock: false,
+    moveOnMouseMove: false,
+    zoomOnMouseWheel: true,
+    moveOnMouseWheel: false
+  }
+])
+
 const initChart = () => {
   if (chart) {
     chart.dispose()
   }
-  chart = echarts.init(chartRef.value)
+  chart = echarts.init(chartRef.value, null, {
+    renderer: 'canvas',
+    useDirtyRect: false
+  })
+  
+  // 设置全局配置，只包含 X 轴的 dataZoom
+  chart.setOption({
+    animation: false,
+    dataZoom: getDataZoomConfig()
+  }, true)
+
+  // 监听 dataZoom，实现缩放间隔限制
+  chart.on('datazoom', function () {
+    const currentTime = Date.now()
+    if (this.lastZoomTime && currentTime - this.lastZoomTime < 200) {
+      return
+    }
+    this.lastZoomTime = currentTime
+  })
 }
 
 const updateChart = () => {
   if (!chart || !currentChild.value) return
 
   const records = recordsStore.getChildRecords(currentChild.value.id)
-  // 按日期排序
   const sortedRecords = records.sort((a, b) => new Date(a.date) - new Date(b.date))
 
-  // 转换数据，X轴使用年龄
   const chartData = sortedRecords.map(record => ({
     age: calculateAge(record.date, currentChild.value.birthDate),
     value: record[chartType.value],
@@ -100,7 +136,7 @@ const updateChart = () => {
   })).sort((a, b) => a.age - b.age)
 
   const option = {
-    animation: false,  // 禁用动画，避免重绘问题
+    animation: false,
     tooltip: {
       trigger: 'axis',
       formatter: function (params) {
@@ -128,8 +164,8 @@ const updateChart = () => {
       name: '年龄（岁）',
       nameLocation: 'middle',
       nameGap: 30,
-      min: 3,  // 从3岁开始
-      max: Math.ceil(Math.max(...chartData.map(item => item.age))),  // 向上取整
+      min: 3,
+      max: Math.ceil(Math.max(...chartData.map(item => item.age))),
       axisLabel: {
         formatter: function (value) {
           return formatAgeDisplay(value)
@@ -141,14 +177,12 @@ const updateChart = () => {
       name: chartType.value === 'height' ? '身高（cm）' : '体重（kg）',
       nameLocation: 'middle',
       nameGap: 55,
-      min: chartType.value === 'height' ? 50 : null,  // 身高从50cm开始，体重保持自动
+      min: chartType.value === 'height' ? 50 : null,
       max: function(value) {
         const maxDataValue = Math.max(...chartData.map(item => item.value));
         if (chartType.value === 'height') {
-          // 身高增加20cm的余量
           return Math.ceil((maxDataValue + 20) / 10) * 10;
         } else {
-          // 体重增加5kg的余量
           return Math.ceil((maxDataValue + 5) / 5) * 5;
         }
       },
@@ -186,37 +220,37 @@ const updateChart = () => {
           }]
         }
       }
-    }],
-    dataZoom: [
-      {
-        type: 'inside',
-        xAxisIndex: 0,
-        filterMode: 'none',
-        minSpan: 10,
-        start: 0,
-        end: 100
-      },
-      {
-        type: 'inside',
-        yAxisIndex: 0,
-        filterMode: 'none',
-        minSpan: 10,
-        start: 0,
-        end: 100
-      }
-    ]
+    }]
   }
 
-  // 清除之前的图表实例
-  chart.clear()
-  // 设置新的配置
-  chart.setOption(option, true)
+  // 更新图表时不替换 dataZoom 配置
+  chart.setOption(option, {
+    replaceMerge: ['series', 'xAxis', 'yAxis'],
+    lazyUpdate: true
+  })
 }
 
 onMounted(() => {
   initChart()
   updateChart()
-  window.addEventListener('resize', () => chart?.resize())
+  
+  // 添加防抖的 resize 处理
+  let resizeTimer = null
+  window.addEventListener('resize', () => {
+    if (resizeTimer) clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => {
+      chart?.resize()
+    }, 100)
+  })
+})
+
+// 确保在组件卸载时清理
+onUnmounted(() => {
+  if (chart) {
+    chart.off('datazoom')
+    chart.dispose()
+  }
+  chart = null
 })
 
 watch([chartType, currentChild], updateChart)
