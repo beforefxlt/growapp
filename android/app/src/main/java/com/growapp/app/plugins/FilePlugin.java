@@ -445,7 +445,17 @@ public class FilePlugin extends Plugin {
                 result.write(buffer, 0, length);
             }
             
-            String content = result.toString(encoding);
+            byte[] bytes = result.toByteArray();
+            String content;
+            
+            if ("base64".equals(encoding)) {
+                content = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+            } else {
+                content = result.toString(encoding);
+            }
+            
+            Log.d(TAG, "File read successfully, encoding: " + encoding + ", content length: " + content.length());
+            
             inputStream.close();
             result.close();
             
@@ -453,6 +463,7 @@ public class FilePlugin extends Plugin {
             ret.put("content", content);
             call.resolve(ret);
         } catch (Exception e) {
+            Log.e(TAG, "Failed to read file", e);
             call.reject("Failed to read file: " + e.getMessage(), e);
         }
     }
