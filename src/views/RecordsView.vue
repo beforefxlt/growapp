@@ -16,38 +16,40 @@
         </div>
       </div>
 
-      <el-table :data="sortedRecords" style="width: 100%; margin-bottom: 20px;">
-        <el-table-column label="日期" width="120">
-          <template #default="{ row }">
-            {{ formatDate(row.date) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="身高/体重">
-          <template #default="{ row }">
-            {{ row.height }}cm / {{ row.weight }}kg
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template #default="{ row }">
-            <el-button-group>
-              <el-button type="primary" link @click="editRecord(row)">
-                <el-icon><Edit /></el-icon>
-              </el-button>
-              <el-button type="danger" link @click="deleteRecord(row)">
-                <el-icon><Delete /></el-icon>
-              </el-button>
-            </el-button-group>
-          </template>
-        </el-table-column>
-      </el-table>
+      <div class="records-content">
+        <el-table :data="sortedRecords" style="width: 100%; margin-bottom: 20px;">
+          <el-table-column label="日期" width="120">
+            <template #default="{ row }">
+              {{ formatDate(row.date) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="身高/体重">
+            <template #default="{ row }">
+              {{ row.height }}cm / {{ row.weight }}kg
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100">
+            <template #default="{ row }">
+              <el-button-group>
+                <el-button type="primary" link @click="editRecord(row)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+                <el-button type="danger" link @click="deleteRecord(row)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </el-button-group>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <div class="csv-actions">
-        <el-button type="primary" plain @click="exportToCsv">
-          <el-icon><Download /></el-icon>导出CSV
-        </el-button>
-        <el-button type="primary" plain @click="importCsv">
-          <el-icon><Upload /></el-icon>导入CSV
-        </el-button>
+        <div class="csv-actions">
+          <el-button type="primary" plain @click="exportToCsv">
+            <el-icon><Download /></el-icon>导出CSV
+          </el-button>
+          <el-button type="primary" plain @click="importCsv">
+            <el-icon><Upload /></el-icon>导入CSV
+          </el-button>
+        </div>
       </div>
 
       <el-dialog
@@ -104,7 +106,13 @@ import { Plus, Edit, Delete, Download, Upload } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import { Capacitor, registerPlugin } from '@capacitor/core'
-import { formatDate } from '../utils/dateFormat'
+import { 
+  formatDate, 
+  getCurrentLocalISOString, 
+  formatDateForFileName, 
+  getDateTimeHourKey,
+  getLocalISOString  // 添加这个导入
+} from '../utils/dateUtils'
 
 // 注册FilePlugin
 const FilePlugin = registerPlugin('GrowAppFilePlugin');
@@ -121,9 +129,9 @@ const isEditing = ref(false)
 const editingRecordId = ref(null)
 
 const form = ref({
-  date: new Date().toISOString().slice(0, 16),  // 格式化到分钟
-  height: null,  // 身高默认为null
-  weight: null   // 体重默认为null
+  date: getCurrentLocalISOString(),  // 使用新的获取本地时间函数
+  height: null,
+  weight: null
 })
 
 const sortedRecords = computed(() => {
@@ -140,10 +148,7 @@ const sortedRecords = computed(() => {
   records.forEach(record => {
     // 将日期时间格式化到小时
     const dateObj = new Date(record.date)
-    const dateKey = `${dateObj.getFullYear()}-${
-      String(dateObj.getMonth() + 1).padStart(2, '0')}-${
-      String(dateObj.getDate()).padStart(2, '0')} ${
-      String(dateObj.getHours()).padStart(2, '0')}`
+    const dateKey = getDateTimeHourKey(dateObj)
     
     // 由于已经按创建时间排序，如果key不存在，就是最新的记录
     if (!uniqueRecords.has(dateKey)) {
@@ -158,9 +163,9 @@ const sortedRecords = computed(() => {
 
 const resetForm = () => {
   form.value = {
-    date: new Date().toISOString().slice(0, 16),  // 保持今天的日期
-    height: null,  // 身高默认为null
-    weight: null   // 体重默认为null
+    date: getCurrentLocalISOString(),  // 使用新的获取本地时间函数
+    height: null,
+    weight: null
   }
   isEditing.value = false
   editingRecordId.value = null
@@ -183,19 +188,11 @@ const deleteRecord = (record) => {
 
 const saveRecord = () => {
   // 将表单日期格式化到小时
-  const formDateObj = new Date(form.value.date)
-  const formDateKey = `${formDateObj.getFullYear()}-${
-    String(formDateObj.getMonth() + 1).padStart(2, '0')}-${
-    String(formDateObj.getDate()).padStart(2, '0')} ${
-    String(formDateObj.getHours()).padStart(2, '0')}`
+  const formDateKey = getDateTimeHourKey(new Date(form.value.date))
 
   const existingRecords = recordsStore.getChildRecords(currentChild.value.id)
   const sameTimeRecord = existingRecords.find(r => {
-    const recordDateObj = new Date(r.date)
-    const recordDateKey = `${recordDateObj.getFullYear()}-${
-      String(recordDateObj.getMonth() + 1).padStart(2, '0')}-${
-      String(recordDateObj.getDate()).padStart(2, '0')} ${
-      String(recordDateObj.getHours()).padStart(2, '0')}`
+    const recordDateKey = getDateTimeHourKey(new Date(r.date))
     return recordDateKey === formDateKey
   })
 
@@ -228,15 +225,6 @@ const saveRecord = () => {
     showAddDialog.value = false
     resetForm()
   }
-}
-
-const formatDateForFileName = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}${month}${day}_${hours}${minutes}`;
 }
 
 const checkAndRequestPermissions = async () => {
@@ -314,20 +302,23 @@ const exportToCsv = async () => {
     }
 
     // 准备CSV内容
-    const headers = ['日期', '身高(cm)', '体重(kg)'];
-    const rows = sortedRecords.value.map(record => [
-      formatDate(record.date),
-      record.height,
-      record.weight
-    ]);
+    const rows = sortedRecords.value.map(record => {
+      const date = new Date(record.date);
+      const formattedDate = formatDate(record.date, 'YYYY年MM月DD日 HH:mm');  // 修改格式化模式,添加时分
+      return [
+        formattedDate,
+        record.height.toFixed(1),
+        record.weight.toFixed(2)
+      ];
+    });
     
+    // 修改CSV内容生成逻辑，不在这里添加儿童姓名
     const csvContent = [
-      headers.join(','),
+      '日期,身高(cm),体重(kg)',
       ...rows.map(row => row.join(','))
     ].join('\n');
 
     console.log('生成的CSV内容:', csvContent);
-    console.log('生成的CSV内容长度:', csvContent.length);
 
     const fileName = `${currentChild.value.name}_生长记录_${formatDateForFileName(new Date())}.csv`;
 
@@ -337,8 +328,8 @@ const exportToCsv = async () => {
         const result = await FilePlugin.saveFile({
           content: csvContent,
           fileName: fileName,
-          mimeType: 'text/csv',
-          childName: currentChild.value.name
+          childName: currentChild.value.name,  // 添加儿童姓名
+          mimeType: 'text/csv'
         });
 
         console.log('文件保存结果:', result);
@@ -541,26 +532,121 @@ const processFileContent = async (rows, fileNameChildName) => {
   try {
     console.log('开始处理文件内容，总行数:', rows.length);
     
-    // 第一行必须是儿童姓名
-    const nameRow = rows[0].trim();
-    const childName = nameRow.replace('儿童姓名:', '').trim();
+    if (rows.length < 3) {
+      throw new Error('文件格式错误：文件内容不完整，至少需要包含儿童姓名、标题行和一条记录');
+    }
     
-    // 第二行必须是标准标题
-    const titleRow = rows[1].trim().split(',');
-    if (titleRow.join(',') !== '日期,身高(cm),体重(kg)') {
-      throw new Error('文件格式错误：标题行必须为"日期,身高(cm),体重(kg)"');
+    // 验证第一行：儿童姓名
+    const nameRow = rows[0].trim();
+    if (!nameRow.startsWith('儿童姓名:')) {
+      throw new Error('文件格式错误：第一行必须以"儿童姓名:"开头');
+    }
+    const childName = nameRow.replace('儿童姓名:', '').trim();
+    if (!childName) {
+      throw new Error('文件格式错误：儿童姓名不能为空');
+    }
+    
+    // 验证第二行：标题
+    const titleRow = rows[1].trim();
+    // 允许多种标题格式，忽略空格和制表符
+    const validTitles = [
+      '日期,身高(cm),体重(kg)',
+      '日期\t身高(cm)\t体重(kg)',
+      '日期, 身高(cm), 体重(kg)',
+      '日期 身高(cm) 体重(kg)',
+      'date,height(cm),weight(kg)',
+      'date, height(cm), weight(kg)'
+    ];
+    
+    // 标准化标题行（移除多余空格和制表符）
+    const normalizedTitleRow = titleRow.split(/[\t,]/).map(item => item.trim()).join(',');
+    
+    if (!validTitles.some(title => title.split(/[\t,]/).map(item => item.trim()).join(',') === normalizedTitleRow)) {
+      throw new Error(`文件格式错误：第二行必须是标准标题，支持以下格式：
+      日期,身高(cm),体重(kg)
+      日期\t身高(cm)\t体重(kg)`);
     }
 
     // 处理数据行
     const dataRows = rows.slice(2).filter(row => row.trim());
-    const records = dataRows.map(row => {
-      const [dateStr, height, weight] = row.split(',').map(item => item.trim());
-      return {
-        date: new Date(dateStr).toISOString().slice(0, 16),
-        height: parseFloat(height),
-        weight: parseFloat(weight)
-      };
+    if (dataRows.length === 0) {
+      throw new Error('文件格式错误：没有找到有效的记录数据');
+    }
+
+    const records = [];
+    const errors = [];
+
+    dataRows.forEach((row, index) => {
+      try {
+        // 支持逗号、制表符或空格分隔
+        const [dateStr, height, weight] = row.split(/[\t,]/).map(item => item.trim());
+        
+        // 验证并转换日期格式
+        let date;
+        // 尝试多种日期格式
+        const formats = [
+          /^(\d{4})年(\d{1,2})月(\d{1,2})日 (\d{1,2}):(\d{1,2})$/, // YYYY年MM月DD日 HH:mm
+          /^(\d{4})年(\d{1,2})月(\d{1,2})日$/, // YYYY年MM月DD日
+          /^(\d{4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2})$/, // YYYY-MM-DD HH:mm
+          /^(\d{4})-(\d{1,2})-(\d{1,2})$/, // YYYY-MM-DD
+          /^(\d{4})\/(\d{1,2})\/(\d{1,2}) (\d{1,2}):(\d{1,2})$/, // YYYY/MM/DD HH:mm
+          /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/ // YYYY/MM/DD
+        ];
+
+        let matched = false;
+        for (const format of formats) {
+          const match = dateStr.match(format);
+          if (match) {
+            const year = parseInt(match[1]);
+            const month = parseInt(match[2]) - 1;
+            const day = parseInt(match[3]);
+            const hours = match[4] ? parseInt(match[4]) : 0;
+            const minutes = match[5] ? parseInt(match[5]) : 0;
+            
+            date = new Date(year, month, day, hours, minutes);
+            
+            if (!isNaN(date.getTime()) && 
+                date.getFullYear() === year && 
+                date.getMonth() === month && 
+                date.getDate() === day) {
+              matched = true;
+              break;
+            }
+          }
+        }
+
+        if (!matched) {
+          throw new Error(`第${index + 3}行：日期格式无效，支持的格式有：
+          YYYY年MM月DD日 HH:mm
+          YYYY年MM月DD日`);
+        }
+
+        // 验证身高
+        const heightNum = parseFloat(height);
+        if (isNaN(heightNum) || heightNum <= 0 || heightNum > 250) {
+          throw new Error(`第${index + 3}行：身高数值无效，应为0-250之间的数字`);
+        }
+
+        // 验证体重
+        const weightNum = parseFloat(weight);
+        if (isNaN(weightNum) || weightNum <= 0 || weightNum > 150) {
+          throw new Error(`第${index + 3}行：体重数值无效，应为0-150之间的数字`);
+        }
+
+        records.push({
+          date: getLocalISOString(date).slice(0, 16),  // 确保使用正确的日期格式
+          height: heightNum,
+          weight: weightNum,
+          createdAt: new Date().toISOString()  // 添加创建时间
+        });
+      } catch (error) {
+        errors.push(error.message);
+      }
     });
+
+    if (errors.length > 0) {
+      throw new Error('数据格式错误：\n' + errors.join('\n'));
+    }
 
     // 检查是否存在该儿童
     const childrenStore = useChildrenStore();
@@ -580,32 +666,27 @@ const processFileContent = async (rows, fileNameChildName) => {
       targetChildId = existingChild.id;
     }
 
-    // 添加记录（使用store的去重逻辑）
+    // 添加记录
     let addedCount = 0;
     let updatedCount = 0;
     let skippedCount = 0;
 
-    // 按创建时间排序，确保最新的记录优先处理
     records.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     records.forEach(record => {
-      // 使用store的hasRecordAtTime方法检查重复
       const existingRecord = recordsStore.hasRecordAtTime(targetChildId, record.date);
       
       if (!existingRecord) {
-        // 如果不存在相同时间的记录，添加新记录
         recordsStore.addRecord(targetChildId, record);
         addedCount++;
+      } else if (
+        existingRecord.height !== record.height || 
+        existingRecord.weight !== record.weight
+      ) {
+        recordsStore.updateRecord(targetChildId, existingRecord.id, record);
+        updatedCount++;
       } else {
-        // 如果存在相同时间的记录，检查数据是否相同
-        if (existingRecord.height !== record.height || existingRecord.weight !== record.weight) {
-          // 数据不同，更新记录
-          recordsStore.updateRecord(targetChildId, existingRecord.id, record);
-          updatedCount++;
-        } else {
-          // 数据完全相同，跳过
-          skippedCount++;
-        }
+        skippedCount++;
       }
     });
 
@@ -616,12 +697,12 @@ const processFileContent = async (rows, fileNameChildName) => {
 
     ElMessage.success(`导入成功：${resultMessage.join('，')}`);
     
-    // 如果当前没有选中儿童，自动选中导入的儿童
     if (!currentChild.value) {
       childrenStore.setCurrentChild(targetChildId);
     }
   } catch (error) {
     console.error('处理文件内容错误:', error);
+    ElMessage.error(error.message);
     throw error;
   }
 };
@@ -645,6 +726,10 @@ const formatImportTimestamp = (timestamp) => {
   box-sizing: border-box;
   background-color: #F6F6FB;
   min-height: 100vh;
+  height: 100vh; /* 固定高度为视口高度 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 防止整体滚动 */
 }
 
 .records-header {
@@ -652,10 +737,32 @@ const formatImportTimestamp = (timestamp) => {
   justify-content: space-between;
   align-items: center;
   margin: 0;
-  padding: 15px 0;
+  padding: 15px;
   background: #FFFFFF;
   border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0; /* 防止头部压缩 */
+}
+
+/* 添加内容容器样式 */
+.records-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+:deep(.el-table) {
+  flex: 0 1 auto;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+:deep(.el-table__body-wrapper) {
+  overflow-y: auto;
 }
 
 .records-header-left {
@@ -684,11 +791,6 @@ const formatImportTimestamp = (timestamp) => {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-:deep(.el-table) {
-  margin: 0 !important;
-  border-radius: 0 !important;
 }
 
 :deep(.el-table .el-table__header th) {
@@ -756,30 +858,26 @@ const formatImportTimestamp = (timestamp) => {
 
 :deep(.record-dialog) {
   .el-dialog {
-    max-width: 360px;
-    margin: 0 auto;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  .el-dialog__header {
-    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
-    padding: 15px 20px;
-    margin-right: 0;
-    .el-dialog__title {
-      color: #FFFFFF;
-      font-size: 16px;
-      font-weight: 500;
+    max-width: 90%;
+    width: 360px !important;
+    margin: 15px auto !important;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 30px); /* 限制最大高度 */
+    
+    .el-dialog__body {
+      overflow-y: auto; /* 内容过多时可滚动 */
+      flex: 1;
+      padding: 20px;
     }
-  }
-
-  .el-dialog__body {
-    padding: 20px;
-  }
-
-  .el-form-item__label {
-    color: #626270;
-    font-weight: 500;
+    
+    .el-dialog__header {
+      flex-shrink: 0;
+    }
+    
+    .el-dialog__footer {
+      flex-shrink: 0;
+    }
   }
 }
 
@@ -787,11 +885,12 @@ const formatImportTimestamp = (timestamp) => {
   display: flex;
   justify-content: center;
   gap: 16px;
-  padding: 15px 0;
+  padding: 15px;
   background: #FFFFFF;
   border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  margin: 0;
+  margin-top: 0;
+  flex-shrink: 0;
 }
 
 :deep(.el-button--primary.is-plain) {
@@ -806,5 +905,14 @@ const formatImportTimestamp = (timestamp) => {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(128, 124, 165, 0.1);
   }
+}
+
+:deep(.el-empty) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
 }
 </style>

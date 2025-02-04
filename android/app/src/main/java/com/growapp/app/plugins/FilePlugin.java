@@ -120,8 +120,8 @@ public class FilePlugin extends Plugin {
             fileName = fileName + ".csv";
         }
 
-        // 在内容开头添加儿童姓名
-        content = "儿童姓名: " + childName + "\n" + content;
+        // 在内容开头添加儿童姓名，并确保格式统一
+        content = "儿童姓名:" + childName + "\n" + content;
 
         Log.d(TAG, "Saving file: " + fileName + ", content length: " + content.length());
         Log.d(TAG, "Content preview: " + (content.length() > 100 ? content.substring(0, 100) + "..." : content));

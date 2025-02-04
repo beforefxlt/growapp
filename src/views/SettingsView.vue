@@ -12,38 +12,40 @@
       </div>
     </div>
 
-    <el-empty v-if="!hasChildren" description="暂无儿童信息" />
+    <div class="settings-content">
+      <el-empty v-if="!hasChildren" description="暂无儿童信息" />
 
-    <el-card v-else v-for="child in children" :key="child.id" class="child-card">
-      <template #header>
-        <div class="card-header">
-          <span>{{ child.name }}</span>
-          <div class="button-group">
-            <el-button 
-              type="primary" 
-              :plain="child.id !== currentChildId"
-              @click="setCurrentChild(child.id)"
-            >
-              {{ child.id === currentChildId ? '当前选中' : '选择' }}
-            </el-button>
-            <el-button type="primary" link @click="editChild(child)">
-              <el-icon><Edit /></el-icon>
-            </el-button>
-            <el-button type="danger" link @click="deleteChild(child)">
-              <el-icon><Delete /></el-icon>
-            </el-button>
+      <el-card v-else v-for="child in children" :key="child.id" class="child-card">
+        <template #header>
+          <div class="card-header">
+            <span>{{ child.name }}</span>
+            <div class="button-group">
+              <el-button 
+                type="primary" 
+                :plain="child.id !== currentChildId"
+                @click="setCurrentChild(child.id)"
+              >
+                {{ child.id === currentChildId ? '当前选中' : '选择' }}
+              </el-button>
+              <el-button type="primary" link @click="editChild(child)">
+                <el-icon><Edit /></el-icon>
+              </el-button>
+              <el-button type="danger" link @click="deleteChild(child)">
+                <el-icon><Delete /></el-icon>
+              </el-button>
+            </div>
           </div>
-        </div>
-      </template>
-      <el-descriptions :column="1">
-        <el-descriptions-item label="性别">
-          {{ child.gender === 'male' ? '男' : '女' }}
-        </el-descriptions-item>
-        <el-descriptions-item label="出生日期">
-          {{ formatDate(child.birthDate) }}
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-card>
+        </template>
+        <el-descriptions :column="1">
+          <el-descriptions-item label="性别">
+            {{ child.gender === 'male' ? '男' : '女' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="出生日期">
+            {{ formatDate(child.birthDate) }}
+          </el-descriptions-item>
+        </el-descriptions>
+      </el-card>
+    </div>
 
     <el-dialog
       v-model="showAddDialog"
@@ -314,35 +316,62 @@ const copySyncCode = async () => {
 
 <style scoped>
 .settings-container {
-  padding: 10px;
-  max-width: 100%;
+  padding: 0;
+  margin: 0;
+  width: 100%;
   box-sizing: border-box;
   background-color: #F6F6FB;
   min-height: 100vh;
+  height: 100vh; /* 固定高度为视口高度 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* 防止整体滚动 */
 }
 
 .settings-header {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 10px;
+  margin: 0;
+  padding: 15px;
   background: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 }
 
 .center-title {
-  margin: 0;
+  margin: 0 0 15px 0;
   color: #2F2F38;
   font-weight: 500;
   text-align: center;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .header-buttons {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  width: 100%;
+  justify-content: center;
+}
+
+.header-buttons .el-button {
+  flex: 1;
+  max-width: 160px;
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto; /* 只有内容超出时才能滚动 */
+  -webkit-overflow-scrolling: touch; /* 在iOS上提供平滑滚动 */
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .child-card {
@@ -547,15 +576,14 @@ const copySyncCode = async () => {
 
 .sync-actions {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 16px;
-}
-
-.sync-actions :deep(.el-button) {
-  width: 100%;
-  margin-left: 0;
   justify-content: center;
+  gap: 16px;
+  padding: 15px;
+  background: #FFFFFF;
+  border-radius: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin: 0;
+  flex-shrink: 0; /* 防止底部压缩 */
 }
 
 :deep(.el-button--success) {
@@ -581,5 +609,77 @@ const copySyncCode = async () => {
   border-color: #b3e19d;
   transform: none;
   box-shadow: none;
+}
+
+:deep(.el-table) {
+  flex: 1;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  height: calc(100vh - 200px); /* 动态计算表格高度 */
+  max-height: calc(100vh - 200px);
+}
+
+:deep(.el-table__body-wrapper) {
+  overflow-y: auto;
+  height: calc(100% - 40px); /* 减去表头高度 */
+}
+
+:deep(.child-dialog) {
+  .el-dialog {
+    max-width: 90%;
+    width: 360px !important;
+    margin: 15px auto !important;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 30px); /* 限制最大高度 */
+    
+    .el-dialog__body {
+      overflow-y: auto; /* 内容过多时可滚动 */
+      flex: 1;
+      padding: 20px;
+    }
+    
+    .el-dialog__header {
+      flex-shrink: 0;
+    }
+    
+    .el-dialog__footer {
+      flex-shrink: 0;
+    }
+  }
+}
+
+:deep(.sync-dialog) {
+  .el-dialog {
+    max-width: 90%;
+    width: 360px !important;
+    margin: 15px auto !important;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 30px);
+    
+    .el-dialog__body {
+      overflow-y: auto;
+      flex: 1;
+      padding: 20px;
+    }
+    
+    .el-dialog__header {
+      flex-shrink: 0;
+    }
+    
+    .el-dialog__footer {
+      flex-shrink: 0;
+    }
+  }
+}
+
+:deep(.el-empty) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
 }
 </style>

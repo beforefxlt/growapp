@@ -60,6 +60,7 @@ import {
   TimelineComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
+import { formatDate } from '../utils/dateUtils'
 
 echarts.use([
   TitleComponent,
@@ -116,11 +117,9 @@ const updateChart = () => {
       trigger: 'axis',
       formatter: function (params) {
         const date = new Date(chartData[params[0].dataIndex].date)
-        const year = date.getFullYear()
-        const month = String(date.getMonth() + 1).padStart(2, '0')
-        const day = String(date.getDate()).padStart(2, '0')
+        const formattedDate = formatDate(date, 'YYYY年MM月DD日')
         const age = params[0].value[0]
-        return `${year}年${month}月${day}日<br/>年龄: ${age}岁<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
+        return `${formattedDate}<br/>年龄: ${age}岁<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
       },
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#807CA5',

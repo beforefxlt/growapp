@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { Preferences } from '@capacitor/preferences'
+import { getDateTimeHourKey, getLocalISOString } from '../utils/dateUtils'
 
 export const useRecordsStore = defineStore('records', {
   state: () => ({
@@ -16,18 +17,10 @@ export const useRecordsStore = defineStore('records', {
     // 检查是否存在同一时间的记录
     hasRecordAtTime(childId, date) {
       const records = this.records[childId] || []
-      const dateObj = new Date(date)
-      const dateKey = `${dateObj.getFullYear()}-${
-        String(dateObj.getMonth() + 1).padStart(2, '0')}-${
-        String(dateObj.getDate()).padStart(2, '0')} ${
-        String(dateObj.getHours()).padStart(2, '0')}`
+      const dateKey = getDateTimeHourKey(new Date(date))
       
       return records.find(r => {
-        const recordDateObj = new Date(r.date)
-        const recordDateKey = `${recordDateObj.getFullYear()}-${
-          String(recordDateObj.getMonth() + 1).padStart(2, '0')}-${
-          String(recordDateObj.getDate()).padStart(2, '0')} ${
-          String(recordDateObj.getHours()).padStart(2, '0')}`
+        const recordDateKey = getDateTimeHourKey(new Date(r.date))
         return recordDateKey === dateKey
       })
     },
@@ -51,7 +44,7 @@ export const useRecordsStore = defineStore('records', {
         ...record,
         id,
         childId,
-        createdAt: new Date().toISOString()
+        createdAt: getLocalISOString(new Date())
       })
       this.saveToLocal()
     },
@@ -63,7 +56,7 @@ export const useRecordsStore = defineStore('records', {
         records[index] = {
           ...records[index],
           ...data,
-          updatedAt: new Date().toISOString()
+          updatedAt: getLocalISOString(new Date())
         }
         this.saveToLocal()
       }
