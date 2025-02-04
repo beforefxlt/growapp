@@ -2,49 +2,57 @@
   <div class="settings-container">
     <div class="settings-header">
       <h2 class="center-title">儿童信息管理</h2>
-      <div class="header-buttons">
-        <el-button type="primary" @click="showSyncDialog = true">
-          <el-icon><Share /></el-icon>同步数据
-        </el-button>
-        <el-button type="primary" @click="showAddDialog = true">
-          <el-icon><Plus /></el-icon>添加儿童
-        </el-button>
-      </div>
     </div>
 
     <div class="settings-content">
+      <div class="action-button">
+        <el-button @click="showSyncDialog = true">
+          <el-icon><Share /></el-icon>同步数据
+        </el-button>
+      </div>
+
+      <div class="action-button">
+        <el-button @click="showAddDialog = true">
+          <el-icon><Plus /></el-icon>添加儿童
+        </el-button>
+      </div>
+
       <el-empty v-if="!hasChildren" description="暂无儿童信息" />
 
-      <el-card v-else v-for="child in children" :key="child.id" class="child-card">
-        <template #header>
-          <div class="card-header">
-            <span>{{ child.name }}</span>
-            <div class="button-group">
-              <el-button 
-                type="primary" 
-                :plain="child.id !== currentChildId"
-                @click="setCurrentChild(child.id)"
-              >
-                {{ child.id === currentChildId ? '当前选中' : '选择' }}
-              </el-button>
-              <el-button type="primary" link @click="editChild(child)">
-                <el-icon><Edit /></el-icon>
-              </el-button>
-              <el-button type="danger" link @click="deleteChild(child)">
-                <el-icon><Delete /></el-icon>
-              </el-button>
+      <div v-else class="children-list">
+        <el-card v-for="child in children" :key="child.id" class="child-card">
+          <template #header>
+            <div class="card-header">
+              <span class="child-name">{{ child.name }}</span>
+              <div class="button-group">
+                <el-button 
+                  type="primary" 
+                  :class="{ 'is-selected': child.id === currentChildId }"
+                  @click="setCurrentChild(child.id)"
+                >
+                  {{ child.id === currentChildId ? '当前选中' : '选择' }}
+                </el-button>
+                <el-button type="primary" class="icon-button" @click="editChild(child)">
+                  <el-icon><Edit /></el-icon>
+                </el-button>
+                <el-button type="danger" class="icon-button" @click="deleteChild(child)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
+            </div>
+          </template>
+          <div class="child-info">
+            <div class="info-row">
+              <span class="info-label">性别</span>
+              <span class="info-value">{{ child.gender === 'male' ? '男' : '女' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">出生日期</span>
+              <span class="info-value">{{ formatDate(child.birthDate) }}</span>
             </div>
           </div>
-        </template>
-        <el-descriptions :column="1">
-          <el-descriptions-item label="性别">
-            {{ child.gender === 'male' ? '男' : '女' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="出生日期">
-            {{ formatDate(child.birthDate) }}
-          </el-descriptions-item>
-        </el-descriptions>
-      </el-card>
+        </el-card>
+      </div>
     </div>
 
     <el-dialog
@@ -329,70 +337,108 @@ const copySyncCode = async () => {
 }
 
 .settings-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0;
-  padding: var(--spacing-base, 1rem);
+  padding: 0.75rem;
   background: #FFFFFF;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
+  border-bottom: 1px solid #EBEEF5;
 }
 
 .center-title {
-  margin: 0 0 var(--spacing-base, 1rem) 0;
+  margin: 0;
   color: #2F2F38;
-  font-weight: 500;
+  font-weight: 600;
   text-align: center;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: clamp(1rem, 2vw, 1.25rem);
-}
-
-.header-buttons {
-  display: flex;
-  gap: clamp(0.5rem, 2vw, 1rem);
-  width: 100%;
-  justify-content: center;
-  
-  @media screen and (max-width: 576px) {
-    flex-direction: column;
-  }
-}
-
-.header-buttons .el-button {
-  flex: 1;
-  max-width: clamp(120px, 30vw, 160px);
-  
-  @media screen and (max-width: 576px) {
-    max-width: none;
-  }
+  font-size: 1.25rem;
+  line-height: 1.2;
 }
 
 .settings-content {
   flex: 1;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: var(--spacing-base, 1rem);
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-base, 1rem);
+  gap: 1rem;
+  align-items: stretch;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.action-button {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  
+  @media screen and (max-width: 576px) {
+    flex-direction: column;
+  }
+
+  .el-button {
+    flex: 1;
+    width: 100%;
+    height: 40px;
+    justify-content: center;
+  }
+}
+
+.children-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
 }
 
 .child-card {
-  margin-bottom: var(--spacing-base, 1rem);
-  box-shadow: 0 2px 12px rgba(128, 124, 165, 0.1);
-  overflow: hidden;
+  background: #FFFFFF;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  width: 100%;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.child-info {
+  padding: 1rem 0;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #F5F7FA;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.info-label {
+  width: 80px;
+  color: #909399;
+  font-size: 0.875rem;
+}
+
+.info-value {
+  flex: 1;
+  color: #2F2F38;
+  font-size: 0.875rem;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: clamp(0.5rem, 2vw, 1rem);
+  padding: 0.5rem 0;
+  gap: 1rem;
   
   @media screen and (max-width: 576px) {
     flex-direction: column;
@@ -400,98 +446,136 @@ const copySyncCode = async () => {
   }
 }
 
+.child-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #2F2F38;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .button-group {
   display: flex;
-  align-items: center;
   gap: 0.5rem;
+  align-items: center;
+  flex-wrap: nowrap;
   
   @media screen and (max-width: 576px) {
-    justify-content: stretch;
-    
-    .el-button {
-      flex: 1;
-    }
+    justify-content: flex-end;
+  }
+
+  .el-button {
+    flex: 1;
+    min-width: 80px;
+    height: 32px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .icon-button {
+    flex: 0 0 32px;
+    width: 32px;
+    min-width: 32px;
+    padding: 0 !important;
   }
 }
 
 :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
+  background: #807CA5;
   border: none;
-  padding: clamp(0.5rem, 2vw, 1rem) clamp(1rem, 3vw, 1.5rem);
-  font-size: clamp(0.875rem, 1.5vw, 1rem);
-  transition: all 0.3s ease;
   
   &:hover {
-    background: linear-gradient(135deg, #9DA0C5 0%, #A5A8C6 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(128, 124, 165, 0.2);
+    background: #9DA0C5;
+  }
+  
+  &.is-selected {
+    background: #606266;
+  }
+
+  .el-icon {
+    margin-right: 4px;
   }
 }
 
-:deep(.el-button--primary.is-plain) {
-  background: #fff;
-  border: 1px solid #807CA5;
-  color: #807CA5;
+:deep(.el-button--danger) {
+  background: #F56C6C;
+  border: none;
   
   &:hover {
-    background: #F4F5F7;
-    color: #9DA0C5;
-    border-color: #9DA0C5;
+    background: #F78989;
   }
 }
 
-:deep(.el-dialog) {
-  width: clamp(300px, 90vw, 360px) !important;
-  margin: var(--spacing-base, 1rem) auto !important;
-  max-height: calc(100vh - 2rem);
-  display: flex;
-  flex-direction: column;
+:deep(.el-card) {
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   
-  .el-dialog__body {
-    overflow-y: auto;
-    flex: 1;
-    padding: var(--spacing-base, 1rem);
+  .el-card__header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #EBEEF5;
   }
   
-  .el-dialog__header {
-    flex-shrink: 0;
-    background: linear-gradient(135deg, #807CA5 0%, #9DA0C5 100%);
-    padding: var(--spacing-base, 1rem);
-    
-    .el-dialog__title {
-      color: #fff;
-      font-size: clamp(1rem, 1.5vw, 1.125rem);
-    }
-  }
-  
-  .el-dialog__footer {
-    flex-shrink: 0;
-    padding: var(--spacing-base, 1rem);
-  }
-}
-
-:deep(.el-descriptions) {
-  padding: var(--spacing-base, 1rem);
-  
-  .el-descriptions__label {
-    color: #626270;
-    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
-  }
-  
-  .el-descriptions__content {
-    color: #2F2F38;
-    font-size: clamp(0.75rem, 1.25vw, 0.875rem);
+  .el-card__body {
+    padding: 1rem 1.5rem;
   }
 }
 
 :deep(.el-empty) {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  margin: 0;
-  padding: clamp(1rem, 4vw, 2rem);
+  padding: 4rem 0;
+  background: #FFFFFF;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Dialog styles */
+:deep(.el-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+  
+  .el-dialog__header {
+    margin: 0;
+    padding: 1.5rem;
+    background: #807CA5;
+    
+    .el-dialog__title {
+      color: #FFFFFF;
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+    
+    .el-dialog__headerbtn .el-dialog__close {
+      color: #FFFFFF;
+    }
+  }
+  
+  .el-dialog__body {
+    padding: 1.5rem;
+  }
+  
+  .el-dialog__footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #EBEEF5;
+  }
+}
+
+/* Form styles */
+:deep(.el-form-item) {
+  margin-bottom: 1.5rem;
+  
+  .el-form-item__label {
+    font-weight: 500;
+    color: #2F2F38;
+  }
+  
+  .el-input__wrapper,
+  .el-select,
+  .el-date-editor {
+    width: 100%;
+  }
 }
 
 .sync-tip {
@@ -501,34 +585,22 @@ const copySyncCode = async () => {
   line-height: 1.4;
 }
 
-:deep(.sync-dialog), :deep(.child-dialog) {
-  .el-form-item__label {
-    font-size: clamp(0.875rem, 1.5vw, 1rem);
-    padding-bottom: 0.25rem;
-  }
-  
-  .el-input__wrapper {
-    font-size: clamp(0.875rem, 1.5vw, 1rem);
-  }
-  
-  .el-textarea__inner {
-    font-family: monospace;
-    font-size: clamp(0.875rem, 1.5vw, 1rem);
-    word-break: break-all;
-    white-space: pre-wrap;
-  }
-}
-
 .sync-actions {
   display: flex;
   justify-content: center;
-  gap: clamp(0.5rem, 2vw, 1rem);
-  margin-top: var(--spacing-base, 1rem);
+  gap: 1rem;
+  margin-top: 1rem;
   
   @media screen and (max-width: 576px) {
     flex-direction: column;
+  }
+
+  .el-button {
+    flex: 1;
+    min-width: 120px;
+    height: 40px;
     
-    .el-button {
+    @media screen and (max-width: 576px) {
       width: 100%;
     }
   }
