@@ -17,27 +17,34 @@
       </div>
 
       <div class="records-content">
-        <el-table :data="sortedRecords" style="width: 100%; margin-bottom: 20px;">
-          <el-table-column label="日期" width="120">
+        <el-table 
+          :data="sortedRecords" 
+          style="width: 100%; margin-bottom: 20px;" 
+          :cell-style="{ padding: '0 !important', cursor: 'pointer' }"
+          @row-click="editRecord"
+        >
+          <el-table-column prop="date" label="测量日期" min-width="65" align="left">
             <template #default="{ row }">
-              {{ formatDate(row.date) }}
+              <div class="date-cell">
+                {{ formatDate(row.date, 'YYYY-MM-DD') }}<span class="time-text">{{ formatDate(row.date, 'HH:mm') }}</span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="身高/体重">
+          <el-table-column label="年龄" min-width="35" align="left">
             <template #default="{ row }">
-              {{ row.height }}cm / {{ row.weight }}kg
+              <div class="age-cell">
+                {{ calculateAgeText(row.date, currentChild.birthDate).replace('..', '') }}
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100">
+          <el-table-column label="身高" min-width="40" align="left">
             <template #default="{ row }">
-              <el-button-group>
-                <el-button type="primary" link @click="editRecord(row)">
-                  <el-icon><Edit /></el-icon>
-                </el-button>
-                <el-button type="danger" link @click="deleteRecord(row)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </el-button-group>
+              <div class="value-cell">{{ row.height }}<span class="unit">cm</span></div>
+            </template>
+          </el-table-column>
+          <el-table-column label="体重" min-width="40" align="left">
+            <template #default="{ row }">
+              <div class="value-cell">{{ row.weight }}<span class="unit">kg</span></div>
             </template>
           </el-table-column>
         </el-table>
@@ -102,7 +109,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
-import { Plus, Edit, Delete, Download, Upload } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Download, Upload, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import { Capacitor, registerPlugin } from '@capacitor/core'
@@ -111,7 +118,8 @@ import {
   getCurrentLocalISOString, 
   formatDateForFileName, 
   getDateTimeHourKey,
-  getLocalISOString  // 添加这个导入
+  getLocalISOString,
+  calculateAgeText
 } from '../utils/dateUtils'
 
 // 注册FilePlugin
@@ -121,8 +129,22 @@ const router = useRouter()
 const childrenStore = useChildrenStore()
 const recordsStore = useRecordsStore()
 
-const hasChildren = computed(() => childrenStore.hasChildren)
-const currentChild = computed(() => childrenStore.currentChild)
+const hasChildren = computed(() => {
+  console.log('hasChildren computed:', childrenStore.hasChildren);
+  return childrenStore.hasChildren;
+})
+
+const currentChild = computed(() => {
+  const child = childrenStore.currentChild;
+  console.log('RecordsView currentChild computed:', {
+    child,
+    birthDate: child?.birthDate,
+    storeChildren: childrenStore.children,
+    storeCurrentChildId: childrenStore.currentChildId,
+    birthDateType: child?.birthDate ? typeof child.birthDate : 'undefined'
+  });
+  return child;
+})
 
 const showAddDialog = ref(false)
 const isEditing = ref(false)
@@ -135,11 +157,12 @@ const form = ref({
 })
 
 const sortedRecords = computed(() => {
+  console.log('sortedRecords currentChild:', currentChild.value)
   if (!currentChild.value) return []
   
   // 获取所有记录并按创建时间排序
   const records = [...recordsStore.getChildRecords(currentChild.value.id)]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // 先按创建时间排序，保证最新的记录优先处理
+  console.log('records:', records)
   
   // 使用Map进行去重，以日期时间（精确到小时）为key
   const uniqueRecords = new Map()
@@ -171,10 +194,10 @@ const resetForm = () => {
   editingRecordId.value = null
 }
 
-const editRecord = (record) => {
-  form.value = { ...record }
+const editRecord = (row) => {
+  form.value = { ...row }
   isEditing.value = true
-  editingRecordId.value = record.id
+  editingRecordId.value = row.id
   showAddDialog.value = true
 }
 
@@ -726,10 +749,10 @@ const formatImportTimestamp = (timestamp) => {
   box-sizing: border-box;
   background-color: #F6F6FB;
   min-height: 100vh;
-  height: 100vh; /* 固定高度为视口高度 */
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* 防止整体滚动 */
+  overflow: hidden;
 }
 
 .records-header {
@@ -749,20 +772,60 @@ const formatImportTimestamp = (timestamp) => {
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 15px;
+  padding: 8px 0;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 8px;
+}
+
+.date-cell, .age-cell, .value-cell {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  white-space: nowrap;
+  font-size: 13px;
+  padding-left: 1px;
+}
+
+.value-cell {
+  padding-left: 8px;
+}
+
+.time-text {
+  font-size: 13px;
+  color: #909399;
+  margin-left: 2px;
+}
+
+.unit {
+  font-size: 13px;
+  color: #909399;
+  margin-left: 1px;
 }
 
 :deep(.el-table) {
-  flex: 0 1 auto;
-  margin: 0 !important;
-  border-radius: 0 !important;
-}
-
-:deep(.el-table__body-wrapper) {
-  overflow-y: auto;
+  --el-table-header-bg-color: #F4F5F7;
+  --el-table-row-hover-bg-color: #F6F6FB;
+  padding-right: 0;
+  margin-right: 0;
+  
+  .el-table__header-wrapper {
+    th {
+      padding: 0 !important;
+      height: 28px;
+      line-height: 28px;
+      font-size: 13px;
+    }
+  }
+  
+  .el-table__row {
+    td {
+      padding: 0 !important;
+      height: 28px;
+      line-height: 28px;
+      font-size: 13px;
+    }
+  }
 }
 
 .records-header-left {
@@ -808,38 +871,37 @@ const formatImportTimestamp = (timestamp) => {
 }
 
 :deep(.el-table__cell) {
-  padding: 12px !important;
-  text-align: center !important;
+  padding: 0 !important;
 }
 
-:deep(.el-button.is-link) {
-  padding: 8px;
-  border-radius: 4px;
-  background: none;
-  border: none;
-  
-  &.el-button--primary {
-    color: #807CA5;
-    &:hover {
-      color: #9DA0C5;
-    }
-  }
-  
-  &.el-button--danger {
-    color: #F56C6C;
-    &:hover {
-      color: #FF7C7C;
-    }
-  }
+:deep(.el-table__inner-wrapper) {
+  padding: 0 !important;
+}
+
+:deep(.el-table__body) td {
+  padding: 0 !important;
 }
 
 :deep(.el-button-group) {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   
   .el-button + .el-button {
     margin-left: 0;
+  }
+}
+
+:deep(.el-button.is-link) {
+  padding: 4px;
+  height: 24px;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .el-icon {
+    font-size: 14px;
   }
 }
 
@@ -885,7 +947,7 @@ const formatImportTimestamp = (timestamp) => {
   display: flex;
   justify-content: center;
   gap: 16px;
-  padding: 15px;
+  padding: 15px 0;
   background: #FFFFFF;
   border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -914,5 +976,21 @@ const formatImportTimestamp = (timestamp) => {
   justify-content: center;
   align-items: center;
   margin: 0;
+}
+
+.edit-icon {
+  font-size: 13px;
+  color: #807CA5;
+  pointer-events: none;
+  padding: 0;
+  margin: 0;
+}
+
+:deep(.el-table__row) td:last-child {
+  padding: 0 !important;
+}
+
+:deep(.el-table__header) th {
+  padding: 0 !important;
 }
 </style>

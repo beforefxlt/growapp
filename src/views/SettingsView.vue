@@ -556,7 +556,7 @@ const copySyncCode = async () => {
 }
 
 :deep(.sync-dialog .el-dialog__body) {
-  padding: 20px;
+  padding: 15px;
 }
 
 :deep(.sync-dialog .el-form-item__label) {
@@ -577,13 +577,13 @@ const copySyncCode = async () => {
 .sync-actions {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  padding: 15px;
+  gap: 0;  /* 移除按钮之间的间距 */
+  padding: 8px;
   background: #FFFFFF;
   border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   margin: 0;
-  flex-shrink: 0; /* 防止底部压缩 */
+  flex-shrink: 0;
 }
 
 :deep(.el-button--success) {
@@ -661,7 +661,7 @@ const copySyncCode = async () => {
     .el-dialog__body {
       overflow-y: auto;
       flex: 1;
-      padding: 20px;
+      padding: 15px;
     }
     
     .el-dialog__header {
@@ -670,6 +670,26 @@ const copySyncCode = async () => {
     
     .el-dialog__footer {
       flex-shrink: 0;
+    }
+  }
+
+  .el-button {
+    padding: 8px 12px;
+    margin: 0;  /* 移除按钮的外边距 */
+    border-radius: 0;  /* 移除圆角 */
+    
+    &:first-child {
+      border-top-left-radius: 4px;  /* 只给最左边的按钮左边圆角 */
+      border-bottom-left-radius: 4px;
+    }
+    
+    &:last-child {
+      border-top-right-radius: 4px;  /* 只给最右边的按钮右边圆角 */
+      border-bottom-right-radius: 4px;
+    }
+    
+    .el-icon {
+      margin-right: 4px;
     }
   }
 }

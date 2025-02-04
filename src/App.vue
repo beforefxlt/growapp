@@ -7,16 +7,17 @@
         :ellipsis="false"
         :default-active="currentRoute"
         @select="handleSelect"
+        class="nav-menu"
       >
-        <el-menu-item index="home">
+        <el-menu-item index="home" class="nav-item">
           <el-icon><House /></el-icon>
           首页
         </el-menu-item>
-        <el-menu-item index="records">
+        <el-menu-item index="records" class="nav-item">
           <el-icon><List /></el-icon>
           记录
         </el-menu-item>
-        <el-menu-item index="settings">
+        <el-menu-item index="settings" class="nav-item">
           <el-icon><Setting /></el-icon>
           设置
         </el-menu-item>
@@ -30,13 +31,29 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { House, List, Setting } from '@element-plus/icons-vue'
+import { useChildrenStore } from './stores/children'
+import { useRecordsStore } from './stores/records'
 
 const route = useRoute()
 const router = useRouter()
+const childrenStore = useChildrenStore()
+const recordsStore = useRecordsStore()
 const currentRoute = computed(() => route.name)
+
+// 初始化数据
+onMounted(async () => {
+  console.log('App mounted, loading data...')
+  await childrenStore.loadFromLocal()
+  await recordsStore.loadFromLocal()
+  console.log('Data loaded:', { 
+    children: childrenStore.children,
+    currentChild: childrenStore.currentChild,
+    records: recordsStore.records
+  })
+})
 
 // 处理菜单点击
 const handleSelect = (key) => {
@@ -54,15 +71,31 @@ const handleSelect = (key) => {
   border-bottom: 1px solid #eee;
 }
 
-.el-menu {
+.nav-menu {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
   border-bottom: none;
 }
 
+.nav-item {
+  flex: 1;
+  text-align: center;
+  padding: 0 !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 :deep(.el-menu-item) {
-  padding: 0 20px;
+  font-size: 16px;
 }
 
 :deep(.el-menu--horizontal > .el-menu-item.is-active) {
   border-bottom: 2px solid var(--el-menu-active-color);
+}
+
+:deep(.el-icon) {
+  margin-right: 4px;
 }
 </style>

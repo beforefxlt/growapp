@@ -90,4 +90,59 @@ export function getDateTimeHourKey(date) {
     String(d.getMonth() + 1).padStart(2, '0')}-${
     String(d.getDate()).padStart(2, '0')} ${
     String(d.getHours()).padStart(2, '0')}`;
+}
+
+/**
+ * 计算年龄数值
+ * @param {string} recordDate - 记录日期
+ * @param {string} birthDate - 出生日期
+ * @returns {number} - 年龄数值（精确到小数点后一位）
+ */
+export function calculateAge(recordDate, birthDate) {
+  if (!birthDate) return 0;
+  const birthDateTime = new Date(birthDate);
+  const recordDateTime = new Date(recordDate);
+  const diffTime = recordDateTime - birthDateTime;
+  const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25);
+  return parseFloat(diffYears.toFixed(1));
+}
+
+/**
+ * 计算年龄文本
+ * @param {string} recordDate - 记录日期
+ * @param {string} birthDate - 出生日期
+ * @returns {string} - 格式化的年龄文本，如"4岁3个月"
+ */
+export function calculateAgeText(recordDate, birthDate) {
+  if (!recordDate || !birthDate) {
+    console.warn('calculateAgeText: recordDate or birthDate is missing', { recordDate, birthDate });
+    return '';
+  }
+  
+  try {
+    const birthDateTime = new Date(birthDate);
+    const recordDateTime = new Date(recordDate);
+    
+    if (isNaN(birthDateTime.getTime()) || isNaN(recordDateTime.getTime())) {
+      console.warn('calculateAgeText: Invalid date', { birthDate, recordDate });
+      return '';
+    }
+    
+    let years = recordDateTime.getFullYear() - birthDateTime.getFullYear();
+    let months = recordDateTime.getMonth() - birthDateTime.getMonth();
+    
+    if (recordDateTime.getDate() < birthDateTime.getDate()) {
+      months--;
+    }
+    
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+    
+    return `${years}岁${months}个月`;
+  } catch (error) {
+    console.error('calculateAgeText error:', error);
+    return '';
+  }
 } 

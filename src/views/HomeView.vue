@@ -1,19 +1,5 @@
 <template>
   <div class="home-container">
-    <div class="nav-header">
-      <el-button-group>
-        <el-button :class="['nav-button', $route.path === '/' ? 'active' : '']" @click="router.push('/')">
-          <el-icon><House /></el-icon>首页
-        </el-button>
-        <el-button :class="['nav-button', $route.path === '/records' ? 'active' : '']" @click="router.push('/records')">
-          <el-icon><Notebook /></el-icon>记录
-        </el-button>
-        <el-button :class="['nav-button', $route.path === '/settings' ? 'active' : '']" @click="router.push('/settings')">
-          <el-icon><Setting /></el-icon>设置
-        </el-button>
-      </el-button-group>
-    </div>
-
     <el-empty v-if="!hasChildren" description="请先添加儿童信息">
       <el-button type="primary" @click="router.push('/settings')">去添加</el-button>
     </el-empty>
@@ -60,7 +46,7 @@ import {
   TimelineComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { formatDate } from '../utils/dateUtils'
+import { formatDate, calculateAge } from '../utils/dateUtils'
 
 echarts.use([
   TitleComponent,
@@ -81,6 +67,15 @@ const chartType = ref('height')
 const chartRef = ref(null)
 let chart = null
 
+const formatAgeDisplay = (age) => {
+  const years = Math.floor(age)
+  const months = Math.round((age - years) * 12)
+  if (months === 12) {
+    return `${years + 1}岁`
+  }
+  return months > 0 ? `${years}岁${months}个月` : `${years}岁`
+}
+
 const initChart = () => {
   if (chart) {
     chart.dispose()
@@ -95,18 +90,9 @@ const updateChart = () => {
   // 按日期排序
   const sortedRecords = records.sort((a, b) => new Date(a.date) - new Date(b.date))
 
-  // 计算年龄函数
-  const calculateAge = (recordDate) => {
-    const birthDate = new Date(currentChild.value.birthDate)
-    const recordDateTime = new Date(recordDate)
-    const diffTime = recordDateTime - birthDate
-    const diffYears = diffTime / (1000 * 60 * 60 * 24 * 365.25)
-    return parseFloat(diffYears.toFixed(1))
-  }
-
   // 转换数据，X轴使用年龄
   const chartData = sortedRecords.map(record => ({
-    age: calculateAge(record.date),
+    age: calculateAge(record.date, currentChild.value.birthDate),
     value: record[chartType.value],
     date: record.date
   })).sort((a, b) => a.age - b.age)
@@ -119,7 +105,7 @@ const updateChart = () => {
         const date = new Date(chartData[params[0].dataIndex].date)
         const formattedDate = formatDate(date, 'YYYY年MM月DD日')
         const age = params[0].value[0]
-        return `${formattedDate}<br/>年龄: ${age}岁<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
+        return `${formattedDate}<br/>年龄: ${formatAgeDisplay(age)}<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
       },
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#807CA5',
@@ -144,7 +130,7 @@ const updateChart = () => {
       max: Math.ceil(Math.max(...chartData.map(item => item.age))),  // 向上取整
       axisLabel: {
         formatter: function (value) {
-          return value.toFixed(1)
+          return formatAgeDisplay(value)
         }
       }
     },
@@ -152,7 +138,7 @@ const updateChart = () => {
       type: 'value',
       name: chartType.value === 'height' ? '身高（cm）' : '体重（kg）',
       nameLocation: 'middle',
-      nameGap: 40,
+      nameGap: 55,
       min: chartType.value === 'height' ? 0 : null,  // 身高从0开始，体重保持自动
       axisLabel: {
         formatter: function(value) {
@@ -216,62 +202,20 @@ watch([chartType, currentChild], updateChart)
   min-height: 100vh;
 }
 
-.nav-header {
-  display: flex;
-  justify-content: center;
-  background: #fff;
-  padding: 10px;
-  margin: 0;
+.home-header {
+  padding: 15px;
+  background: #FFFFFF;
   border-radius: 0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 15px;
 }
 
-:deep(.el-button-group) {
-  width: 100%;
-  display: flex;
-  max-width: 360px;
-  
-  .nav-button {
-    flex: 1;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    color: #666;
-    font-size: 14px;
-    height: 44px;
-    padding: 0;
-    position: relative;
-    letter-spacing: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    
-    .el-icon {
-      margin-right: 2px;
-      font-size: 16px;
-    }
-    
-    &.active {
-      color: #409EFF;
-      font-weight: normal;
-      
-      &::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background-color: #409EFF;
-      }
-    }
-    
-    &:hover {
-      background: transparent;
-      color: #409EFF;
-    }
-  }
+.center-title {
+  text-align: center;
+  margin: 0;
+  color: #2F2F38;
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .child-info {
