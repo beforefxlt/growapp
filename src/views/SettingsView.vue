@@ -361,7 +361,7 @@ const copySyncCode = async () => {
   flex-direction: column;
   gap: 1rem;
   align-items: stretch;
-  max-width: 800px;
+  max-width: 95%;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;

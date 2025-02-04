@@ -346,7 +346,7 @@ const handleRowClick = (row) => {
   flex-direction: column;
   gap: 0.5rem;
   align-items: flex-start;
-  max-width: 800px;
+  max-width: 95%;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
