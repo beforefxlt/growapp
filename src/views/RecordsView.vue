@@ -338,7 +338,7 @@ const handleRowClick = (row) => {
 
 .records-content {
   flex: 1;
-  padding: 0.5rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -352,7 +352,7 @@ const handleRowClick = (row) => {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   padding: 0;
-  margin: 0 0.5rem;
+  margin: 0;
   box-sizing: border-box;
   
   .el-button {
@@ -383,8 +383,8 @@ const handleRowClick = (row) => {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   padding: 0;
-  margin: 0 0.5rem;
-  width: calc(100% - 1rem);
+  margin: 0;
+  width: 100%;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -431,9 +431,9 @@ const handleRowClick = (row) => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: calc(100% - 1rem);
+  width: 100%;
   padding: 0;
-  margin: 0 0.5rem;
+  margin: 0;
   box-sizing: border-box;
   
   .el-button {

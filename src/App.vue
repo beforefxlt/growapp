@@ -72,6 +72,12 @@ const handleSelect = (key) => {
   height: 70px !important;
 }
 
+:deep(.el-main) {
+  padding: 0 !important;
+  overflow-x: hidden;
+  background-color: #F6F6FB;
+}
+
 .nav-menu {
   display: flex;
   justify-content: space-around;
