@@ -120,11 +120,16 @@ public class FilePlugin extends Plugin {
             fileName = fileName + ".csv";
         }
 
-        // 在内容开头添加儿童姓名，并确保格式统一
-        content = "儿童姓名:" + childName + "\n" + content;
+        // 解码 base64 内容
+        byte[] decodedContent;
+        try {
+            decodedContent = android.util.Base64.decode(content, android.util.Base64.DEFAULT);
+        } catch (Exception e) {
+            call.reject("Failed to decode base64 content: " + e.getMessage());
+            return;
+        }
 
-        Log.d(TAG, "Saving file: " + fileName + ", content length: " + content.length());
-        Log.d(TAG, "Content preview: " + (content.length() > 100 ? content.substring(0, 100) + "..." : content));
+        Log.d(TAG, "Saving file: " + fileName + ", content length: " + decodedContent.length);
         
         // 保存调用以便后续使用
         call.setKeepAlive(true);
@@ -165,8 +170,9 @@ public class FilePlugin extends Plugin {
                         throw new Exception("Content is null");
                     }
                     
-                    Log.d(TAG, "Writing content length: " + content.length());
-                    Log.d(TAG, "Content preview: " + (content.length() > 100 ? content.substring(0, 100) + "..." : content));
+                    // 解码 base64 内容
+                    byte[] decodedContent = android.util.Base64.decode(content, android.util.Base64.DEFAULT);
+                    Log.d(TAG, "Decoded content length: " + decodedContent.length);
                     
                     OutputStream outputStream = null;
                     try {
@@ -179,27 +185,15 @@ public class FilePlugin extends Plugin {
                             throw new Exception("Failed to open output stream");
                         }
                         
-                        // 写入UTF-8 BOM
-                        byte[] bom = new byte[]{(byte)0xEF, (byte)0xBB, (byte)0xBF};
-                        outputStream.write(bom);
-                        outputStream.flush();
-                        Log.d(TAG, "Wrote BOM: " + bom.length + " bytes");
-                        
-                        // 写入内容
-                        String normalizedContent = content.replace("\n", "\r\n"); // 确保使用Windows换行符
-                        byte[] bytes = normalizedContent.getBytes("UTF-8");
-                        Log.d(TAG, "Original content length: " + content.length());
-                        Log.d(TAG, "Normalized content length: " + normalizedContent.length());
-                        Log.d(TAG, "Content bytes length: " + bytes.length);
-                        Log.d(TAG, "Content bytes: " + bytesToHex(bytes));
-                        outputStream.write(bytes);
+                        // 直接写入解码后的内容（已包含 BOM）
+                        outputStream.write(decodedContent);
                         outputStream.flush();
                         
-                        Log.d(TAG, "Successfully wrote " + bytes.length + " bytes");
+                        Log.d(TAG, "Successfully wrote " + decodedContent.length + " bytes");
                         
                         JSObject result = new JSObject();
                         result.put("uri", uri.toString());
-                        result.put("bytesWritten", bytes.length + bom.length);
+                        result.put("bytesWritten", decodedContent.length);
                         savedCall.resolve(result);
                         
                         Log.d(TAG, "File saved successfully to: " + uri.toString());

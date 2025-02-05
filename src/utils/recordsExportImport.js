@@ -1,6 +1,6 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Capacitor } from '@capacitor/core'
-import { formatDate, formatDateForFileName, getLocalISOString } from './dateUtils'
+import { formatDate, formatDateForFileName, getLocalISOString, getDateTimeHourKey } from './dateUtils'
 
 const removeBOM = (str) => {
   if (!str) return '';
@@ -172,8 +172,11 @@ export const exportToCsv = async (records, childName, FilePlugin) => {
       finalContent.set(bom);
       finalContent.set(contentArray, bom.length);
 
+      // 将 Uint8Array 转换为 base64 字符串
+      const base64Content = btoa(String.fromCharCode.apply(null, finalContent));
+
       const result = await FilePlugin.saveFile({
-        content: finalContent,
+        content: base64Content,
         fileName: fileName,
         childName: childName,
         mimeType: 'text/csv; charset=utf-8'
