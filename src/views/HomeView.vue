@@ -32,6 +32,7 @@ import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
+import { useChartConfigStore } from '../stores/chartConfig'
 import { Plus } from '@element-plus/icons-vue'
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
@@ -49,6 +50,7 @@ import { ElEmpty, ElButton, ElDescriptions, ElDescriptionsItem, ElSelect, ElOpti
 const router = useRouter()
 const childrenStore = useChildrenStore()
 const recordsStore = useRecordsStore()
+const chartConfigStore = useChartConfigStore()
 
 const hasChildren = computed(() => childrenStore.hasChildren)
 const currentChild = computed(() => childrenStore.currentChild)
@@ -151,6 +153,8 @@ const updateChartData = () => {
 const updateChartOptions = () => {
   if (!chartData.value.length) return
 
+  const currentConfig = chartConfigStore.config[chartType.value]
+
   chartOptions.value = {
     animation: false,
     tooltip: {
@@ -180,8 +184,8 @@ const updateChartOptions = () => {
       name: '年龄（岁）',
       nameLocation: 'middle',
       nameGap: 30,
-      min: 3,
-      max: Math.ceil(Math.max(...chartData.value.map(item => item.age))),
+      min: currentConfig.xAxisMin,
+      max: Math.max(currentConfig.xAxisMax, Math.ceil(Math.max(...chartData.value.map(item => item.age)))),
       axisLabel: {
         formatter: function (value) {
           return formatAgeDisplay(value)
@@ -193,15 +197,8 @@ const updateChartOptions = () => {
       name: chartType.value === 'height' ? '身高（cm）' : '体重（kg）',
       nameLocation: 'middle',
       nameGap: 55,
-      min: chartType.value === 'height' ? 50 : null,
-      max: function(value) {
-        const maxDataValue = Math.max(...chartData.value.map(item => item.value));
-        if (chartType.value === 'height') {
-          return Math.ceil((maxDataValue + 20) / 10) * 10;
-        } else {
-          return Math.ceil((maxDataValue + 5) / 5) * 5;
-        }
-      },
+      min: currentConfig.yAxisMin,
+      max: currentConfig.yAxisMax,
       axisLabel: {
         formatter: function(value) {
           return value + (chartType.value === 'height' ? 'cm' : 'kg')
@@ -258,7 +255,14 @@ const registerComponents = () => {
   ])
 }
 
-onMounted(() => {
+// 监听配置变化
+watch(() => chartConfigStore.config, () => {
+  updateChartData()
+}, { deep: true })
+
+// 在组件挂载时加载配置
+onMounted(async () => {
+  await chartConfigStore.loadFromLocal()
   registerComponents()
   initChart()
   updateChartData()

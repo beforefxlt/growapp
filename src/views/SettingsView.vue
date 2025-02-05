@@ -51,6 +51,96 @@
         </el-card>
       </div>
 
+      <div class="chart-config">
+        <el-card class="chart-config-card">
+          <template #header>
+            <div class="card-header">
+              <span>图表配置</span>
+            </div>
+          </template>
+          <div class="config-content">
+            <el-tabs v-model="activeTab">
+              <el-tab-pane label="身高曲线" name="height">
+                <el-form label-position="top">
+                  <el-form-item label="X轴范围（年龄/岁）">
+                    <div class="range-inputs">
+                      <el-input-number 
+                        v-model="heightConfig.xAxisMin" 
+                        :min="0" 
+                        :max="heightConfig.xAxisMax"
+                        @change="updateHeightConfig"
+                      />
+                      <span class="range-separator">至</span>
+                      <el-input-number 
+                        v-model="heightConfig.xAxisMax" 
+                        :min="heightConfig.xAxisMin" 
+                        :max="100"
+                        @change="updateHeightConfig"
+                      />
+                    </div>
+                  </el-form-item>
+                  <el-form-item label="Y轴范围（厘米）">
+                    <div class="range-inputs">
+                      <el-input-number 
+                        v-model="heightConfig.yAxisMin" 
+                        :min="0" 
+                        :max="heightConfig.yAxisMax"
+                        @change="updateHeightConfig"
+                      />
+                      <span class="range-separator">至</span>
+                      <el-input-number 
+                        v-model="heightConfig.yAxisMax" 
+                        :min="heightConfig.yAxisMin" 
+                        :max="250"
+                        @change="updateHeightConfig"
+                      />
+                    </div>
+                  </el-form-item>
+                </el-form>
+              </el-tab-pane>
+              <el-tab-pane label="体重曲线" name="weight">
+                <el-form label-position="top">
+                  <el-form-item label="X轴范围（年龄/岁）">
+                    <div class="range-inputs">
+                      <el-input-number 
+                        v-model="weightConfig.xAxisMin" 
+                        :min="0" 
+                        :max="weightConfig.xAxisMax"
+                        @change="updateWeightConfig"
+                      />
+                      <span class="range-separator">至</span>
+                      <el-input-number 
+                        v-model="weightConfig.xAxisMax" 
+                        :min="weightConfig.xAxisMin" 
+                        :max="100"
+                        @change="updateWeightConfig"
+                      />
+                    </div>
+                  </el-form-item>
+                  <el-form-item label="Y轴范围（千克）">
+                    <div class="range-inputs">
+                      <el-input-number 
+                        v-model="weightConfig.yAxisMin" 
+                        :min="0" 
+                        :max="weightConfig.yAxisMax"
+                        @change="updateWeightConfig"
+                      />
+                      <span class="range-separator">至</span>
+                      <el-input-number 
+                        v-model="weightConfig.yAxisMax" 
+                        :min="weightConfig.yAxisMin" 
+                        :max="150"
+                        @change="updateWeightConfig"
+                      />
+                    </div>
+                  </el-form-item>
+                </el-form>
+              </el-tab-pane>
+            </el-tabs>
+          </div>
+        </el-card>
+      </div>
+
       <div class="about-button">
         <el-button @click="showAboutDialog = true">关于</el-button>
       </div>
@@ -149,16 +239,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
 import { useSyncStore } from '../stores/sync'
+import { useChartConfigStore } from '../stores/chartConfig'
 import { Plus, Edit, Delete, Share, Link, Upload, Download } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 
 const childrenStore = useChildrenStore()
 const recordsStore = useRecordsStore()
 const syncStore = useSyncStore()
+const chartConfigStore = useChartConfigStore()
 
 const children = computed(() => childrenStore.children)
 const hasChildren = computed(() => childrenStore.hasChildren)
@@ -171,6 +263,11 @@ const showSyncDialog = ref(false)
 const syncCode = ref('')
 const selectedChildId = ref('')
 const showAboutDialog = ref(false)
+const activeTab = ref('height')
+
+// 图表配置数据
+const heightConfig = ref({ ...chartConfigStore.config.height })
+const weightConfig = ref({ ...chartConfigStore.config.weight })
 
 // 监听弹窗显示状态，当弹窗打开时，如果不是编辑模式就重置表单
 watch(showAddDialog, (newVal) => {
@@ -334,6 +431,22 @@ const copySyncCode = async () => {
     }
   }
 }
+
+// 更新配置方法
+const updateHeightConfig = () => {
+  chartConfigStore.updateConfig('height', heightConfig.value)
+}
+
+const updateWeightConfig = () => {
+  chartConfigStore.updateConfig('weight', weightConfig.value)
+}
+
+// 在组件挂载时加载配置
+onMounted(async () => {
+  await chartConfigStore.loadFromLocal()
+  heightConfig.value = { ...chartConfigStore.config.height }
+  weightConfig.value = { ...chartConfigStore.config.weight }
+})
 </script>
 
 <style scoped>
@@ -669,5 +782,55 @@ const copySyncCode = async () => {
   :deep(.el-dialog__body) {
     padding: 1rem;
   }
+}
+
+.chart-config {
+  margin: 1rem 0;
+}
+
+.chart-config-card {
+  background: #FFFFFF;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.config-content {
+  padding: 1rem 0;
+}
+
+.range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  
+  .el-input-number {
+    flex: 1;
+  }
+}
+
+.range-separator {
+  color: #909399;
+  font-size: 0.875rem;
+}
+
+:deep(.el-tabs__header) {
+  margin-bottom: 1.5rem;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 1.5rem;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+:deep(.el-input-number) {
+  width: 100%;
 }
 </style>
