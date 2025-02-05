@@ -44,6 +44,7 @@ export const useChildrenStore = defineStore('children', {
         this.currentChildId = id
       }
       this.saveToLocal()
+      return newChild
     },
 
     updateChild(id, data) {

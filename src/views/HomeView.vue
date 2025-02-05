@@ -1,33 +1,29 @@
 <template>
-  <div class="home-container">
-    <el-empty v-if="!hasChildren" description="请先添加儿童信息">
-      <el-button type="primary" @click="router.push('/settings')">去添加</el-button>
-    </el-empty>
-
-    <template v-else>
-      <div class="child-info">
-        <el-descriptions :column="3" border size="small">
-          <el-descriptions-item label="姓名">{{ currentChild.name }}</el-descriptions-item>
-          <el-descriptions-item label="性别">{{ currentChild.gender === 'male' ? '男' : '女' }}</el-descriptions-item>
-          <!-- <el-descriptions-item label="出生日期">{{ currentChild.birthDate }}</el-descriptions-item> -->
-        </el-descriptions>
-      </div>
-
+  <div class="home">
+    <div v-if="!currentChild" class="empty-state">
+      <el-empty description="还没有添加儿童信息">
+        <el-button type="primary" @click="goToSettings">去添加</el-button>
+      </el-empty>
+    </div>
+    <div v-else class="child-info">
+      <el-descriptions :column="3" border>
+        <el-descriptions-item label="姓名">{{ currentChild.name }}</el-descriptions-item>
+        <el-descriptions-item label="出生日期">{{ currentChild.birthDate }}</el-descriptions-item>
+        <el-descriptions-item label="年龄">{{ calculateAge(currentChild.birthDate) }}</el-descriptions-item>
+      </el-descriptions>
       <div class="chart-container">
         <div class="chart-header">
-          <el-select v-model="chartType" placeholder="选择图表类型">
-            <el-option label="身高曲线" value="height" />
-            <el-option label="体重曲线" value="weight" />
+          <el-select v-model="chartType">
+            <el-option label="身高" value="height" />
+            <el-option label="体重" value="weight" />
           </el-select>
-
-          <el-button type="primary" @click="router.push('/records')">
+          <el-button type="primary" @click="goToRecords">
             <el-icon><Plus /></el-icon>添加记录
           </el-button>
         </div>
-
         <div ref="chartRef" class="chart"></div>
       </div>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -36,7 +32,7 @@ import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
-import { Plus, House, Notebook, Setting } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import * as echarts from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import {
@@ -48,16 +44,7 @@ import {
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { formatDate, calculateAge } from '../utils/dateUtils'
-
-echarts.use([
-  TitleComponent,
-  TooltipComponent,
-  GridComponent,
-  TimelineComponent,
-  DataZoomComponent,
-  LineChart,
-  CanvasRenderer
-])
+import { ElEmpty, ElButton, ElDescriptions, ElDescriptionsItem, ElSelect, ElOption } from 'element-plus'
 
 const router = useRouter()
 const childrenStore = useChildrenStore()
@@ -68,6 +55,26 @@ const currentChild = computed(() => childrenStore.currentChild)
 const chartType = ref('height')
 const chartRef = ref(null)
 let chart = null
+
+async function goToSettings() {
+  try {
+    await router.push({ name: 'settings', replace: true })
+    await router.isReady()
+    await new Promise(resolve => setTimeout(resolve, 100))
+  } catch (error) {
+    console.error('导航失败:', error)
+  }
+}
+
+async function goToRecords() {
+  try {
+    await router.push({ name: 'records', replace: true })
+    await router.isReady()
+    await new Promise(resolve => setTimeout(resolve, 100))
+  } catch (error) {
+    console.error('导航失败:', error)
+  }
+}
 
 const formatAgeDisplay = (age) => {
   const years = Math.floor(age)
@@ -123,24 +130,33 @@ const initChart = () => {
   })
 }
 
-const updateChart = () => {
-  if (!chart || !currentChild.value) return
+const chartOptions = ref(null)
+const chartData = ref([])
+
+const updateChartData = () => {
+  if (!currentChild.value) return
 
   const records = recordsStore.getChildRecords(currentChild.value.id)
   const sortedRecords = records.sort((a, b) => new Date(a.date) - new Date(b.date))
 
-  const chartData = sortedRecords.map(record => ({
+  chartData.value = sortedRecords.map(record => ({
     age: calculateAge(record.date, currentChild.value.birthDate),
     value: record[chartType.value],
     date: record.date
   })).sort((a, b) => a.age - b.age)
 
-  const option = {
+  updateChartOptions()
+}
+
+const updateChartOptions = () => {
+  if (!chartData.value.length) return
+
+  chartOptions.value = {
     animation: false,
     tooltip: {
       trigger: 'axis',
       formatter: function (params) {
-        const date = new Date(chartData[params[0].dataIndex].date)
+        const date = new Date(chartData.value[params[0].dataIndex].date)
         const formattedDate = formatDate(date, 'YYYY年MM月DD日')
         const age = params[0].value[0]
         return `${formattedDate}<br/>年龄: ${formatAgeDisplay(age)}<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
@@ -165,7 +181,7 @@ const updateChart = () => {
       nameLocation: 'middle',
       nameGap: 30,
       min: 3,
-      max: Math.ceil(Math.max(...chartData.map(item => item.age))),
+      max: Math.ceil(Math.max(...chartData.value.map(item => item.age))),
       axisLabel: {
         formatter: function (value) {
           return formatAgeDisplay(value)
@@ -179,7 +195,7 @@ const updateChart = () => {
       nameGap: 55,
       min: chartType.value === 'height' ? 50 : null,
       max: function(value) {
-        const maxDataValue = Math.max(...chartData.map(item => item.value));
+        const maxDataValue = Math.max(...chartData.value.map(item => item.value));
         if (chartType.value === 'height') {
           return Math.ceil((maxDataValue + 20) / 10) * 10;
         } else {
@@ -197,7 +213,7 @@ const updateChart = () => {
       type: 'line',
       smooth: true,
       showSymbol: true,
-      data: chartData.map(item => [item.age, item.value]),
+      data: chartData.value.map(item => [item.age, item.value]),
       itemStyle: {
         color: '#807CA5'
       },
@@ -223,16 +239,29 @@ const updateChart = () => {
     }]
   }
 
-  // 更新图表时不替换 dataZoom 配置
-  chart.setOption(option, {
+  chart?.setOption(chartOptions.value, {
     replaceMerge: ['series', 'xAxis', 'yAxis'],
     lazyUpdate: true
   })
 }
 
+// 确保组件正确注册
+const registerComponents = () => {
+  echarts.use([
+    TitleComponent,
+    TooltipComponent,
+    GridComponent,
+    TimelineComponent,
+    DataZoomComponent,
+    LineChart,
+    CanvasRenderer
+  ])
+}
+
 onMounted(() => {
+  registerComponents()
   initChart()
-  updateChart()
+  updateChartData()
   
   // 添加防抖的 resize 处理
   let resizeTimer = null
@@ -244,6 +273,16 @@ onMounted(() => {
   })
 })
 
+// 监听图表类型变化
+watch(chartType, () => {
+  updateChartData()
+})
+
+// 监听当前儿童变化
+watch(() => childrenStore.currentChild, () => {
+  updateChartData()
+}, { deep: true })
+
 // 确保在组件卸载时清理
 onUnmounted(() => {
   if (chart) {
@@ -252,8 +291,6 @@ onUnmounted(() => {
   }
   chart = null
 })
-
-watch([chartType, currentChild], updateChart)
 </script>
 
 <style scoped>
@@ -445,3 +482,20 @@ watch([chartType, currentChild], updateChart)
   }
 }
 </style>
+
+<script>
+import { ElEmpty, ElButton, ElDescriptions, ElDescriptionsItem, ElSelect, ElOption } from 'element-plus'
+
+export default {
+  name: 'HomeView',
+  components: {
+    ElEmpty,
+    ElButton,
+    ElDescriptions,
+    ElDescriptionsItem,
+    ElSelect,
+    ElOption
+  },
+  // ... existing code ...
+}
+</script>

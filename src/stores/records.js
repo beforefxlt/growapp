@@ -10,10 +10,42 @@ export const useRecordsStore = defineStore('records', {
   getters: {
     getChildRecords: (state) => (childId) => {
       return state.records[childId] || []
+    },
+
+    // 获取所有记录
+    getAllRecords: (state) => {
+      return Object.values(state.records).flat()
+    },
+
+    // 获取按日期排序的记录
+    getSortedRecords: (state) => (childId) => {
+      const records = state.records[childId] || []
+      return [...records].sort((a, b) => new Date(b.date) - new Date(a.date))
     }
   },
 
   actions: {
+    // 验证记录数据
+    validateRecord(record) {
+      if (!record || typeof record !== 'object') {
+        throw new Error('记录数据无效')
+      }
+
+      if (!record.date) {
+        throw new Error('日期是必填项')
+      }
+
+      if (record.height !== undefined && (record.height < 30 || record.height > 200)) {
+        throw new Error('身高必须在 30-200 厘米之间')
+      }
+
+      if (record.weight !== undefined && (record.weight < 2 || record.weight > 100)) {
+        throw new Error('体重必须在 2-100 千克之间')
+      }
+
+      return true
+    },
+
     // 检查是否存在同一时间的记录
     hasRecordAtTime(childId, date) {
       const records = this.records[childId] || []
@@ -26,46 +58,76 @@ export const useRecordsStore = defineStore('records', {
     },
 
     addRecord(childId, record) {
+      // 验证记录数据
+      this.validateRecord(record)
+
       if (!this.records[childId]) {
         this.records[childId] = []
       }
 
-      // 直接添加新记录，不检查时间重复
+      // 检查是否已存在相同时间的记录
+      const existingRecord = this.hasRecordAtTime(childId, record.date)
+      if (existingRecord) {
+        // 如果存在，更新该记录
+        return this.updateRecord(childId, existingRecord.id, record)
+      }
+
+      // 添加新记录
       const id = Date.now().toString()
-      this.records[childId].push({
+      const newRecord = {
         ...record,
         id,
         childId,
         createdAt: getLocalISOString(new Date())
-      })
+      }
+
+      this.records[childId].push(newRecord)
       this.saveToLocal()
+
+      return newRecord
     },
 
     updateRecord(childId, recordId, data) {
       const records = this.records[childId] || []
       const index = records.findIndex(r => r.id === recordId)
+      
       if (index > -1) {
-        records[index] = {
-          ...records[index],
+        const currentRecord = records[index]
+        const updatedRecord = {
+          ...currentRecord,
           ...data,
           updatedAt: getLocalISOString(new Date())
         }
+
+        // 验证更新后的记录
+        this.validateRecord(updatedRecord)
+
+        records[index] = updatedRecord
         this.saveToLocal()
+        return updatedRecord
       }
+
+      return null
     },
 
     deleteRecord(childId, recordId) {
       const records = this.records[childId] || []
       const index = records.findIndex(r => r.id === recordId)
       if (index > -1) {
-        records.splice(index, 1)
+        const deletedRecord = records.splice(index, 1)[0]
         this.saveToLocal()
+        return deletedRecord
       }
+      return null
     },
 
     deleteChildRecords(childId) {
-      delete this.records[childId]
-      this.saveToLocal()
+      if (this.records[childId]) {
+        delete this.records[childId]
+        this.saveToLocal()
+        return true
+      }
+      return false
     },
 
     async loadFromLocal() {

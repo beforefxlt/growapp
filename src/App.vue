@@ -1,6 +1,6 @@
 <template>
   <el-container class="app-container">
-    <el-header class="app-header">
+    <el-header class="app-header" style="height: 70px">
       <el-menu
         :router="false"
         mode="horizontal"
@@ -44,20 +44,37 @@ const recordsStore = useRecordsStore()
 const currentRoute = computed(() => route.name)
 
 // 初始化数据
+async function loadData() {
+  try {
+    await childrenStore.loadFromLocal()
+    await recordsStore.loadFromLocal()
+    childrenStore.isLoaded = true
+    return { 
+      children: childrenStore.children || [], 
+      currentChild: childrenStore.currentChild, 
+      records: recordsStore.records 
+    }
+  } catch (error) {
+    console.error('数据加载失败:', error)
+    childrenStore.isLoaded = false
+    throw error
+  }
+}
+
 onMounted(async () => {
   console.log('App mounted, loading data...')
-  await childrenStore.loadFromLocal()
-  await recordsStore.loadFromLocal()
-  console.log('Data loaded:', { 
-    children: childrenStore.children,
-    currentChild: childrenStore.currentChild,
-    records: recordsStore.records
-  })
+  try {
+    const data = await loadData()
+    console.log('Data loaded:', data)
+  } catch (error) {
+    console.error('数据加载失败:', error)
+    childrenStore.isLoaded = false
+  }
 })
 
 // 处理菜单点击
-const handleSelect = (key) => {
-  router.push({ name: key })
+const handleSelect = async (key) => {
+  await router.push({ name: key })
 }
 </script>
 
@@ -69,7 +86,6 @@ const handleSelect = (key) => {
 .app-header {
   padding: 0;
   border-bottom: 1px solid #eee;
-  height: 70px !important;
 }
 
 :deep(.el-main) {
