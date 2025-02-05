@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.ByteArrayOutputStream;
 import android.database.Cursor;
 import android.provider.OpenableColumns;
+import java.util.Arrays;
 
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -435,6 +436,15 @@ public class FilePlugin extends Plugin {
             ByteArrayOutputStream result = new ByteArrayOutputStream();
             byte[] buffer = new byte[1024];
             int length;
+            
+            // 读取前20个字节并打印
+            length = inputStream.read(buffer, 0, 20);
+            if (length > 0) {
+                Log.d(TAG, "First 20 bytes: " + bytesToHex(Arrays.copyOf(buffer, length)));
+            }
+            result.write(buffer, 0, length);
+            
+            // 继续读取剩余内容
             while ((length = inputStream.read(buffer)) != -1) {
                 result.write(buffer, 0, length);
             }
@@ -444,11 +454,13 @@ public class FilePlugin extends Plugin {
             
             if ("base64".equals(encoding)) {
                 content = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP);
+                Log.d(TAG, "Base64 encoded content (first 100 chars): " + 
+                      (content.length() > 100 ? content.substring(0, 100) : content));
             } else {
                 content = result.toString(encoding);
+                Log.d(TAG, "Decoded content (first 100 chars): " + 
+                      (content.length() > 100 ? content.substring(0, 100) : content));
             }
-            
-            Log.d(TAG, "File read successfully, encoding: " + encoding + ", content length: " + content.length());
             
             inputStream.close();
             result.close();

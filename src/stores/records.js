@@ -39,7 +39,7 @@ export const useRecordsStore = defineStore('records', {
         throw new Error('身高必须在 30-200 厘米之间')
       }
 
-      if (record.weight !== undefined && (record.weight < 2 || record.weight > 100)) {
+      if (record.weight !== null && record.weight !== undefined && (record.weight < 2 || record.weight > 100)) {
         throw new Error('体重必须在 2-100 千克之间')
       }
 

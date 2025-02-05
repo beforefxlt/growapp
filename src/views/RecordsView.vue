@@ -94,14 +94,18 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="体重(kg)">
-          <el-input-number
-            v-model="form.weight"
-            :min="0"
-            :max="100"
-            :precision="2"
-            style="width: 100%"
-          />
+        <el-form-item label="体重(kg)" class="optional-field" data-test="weight-field">
+          <div class="field-with-hint">
+            <el-input-number
+              v-model="form.weight"
+              :min="0"
+              :max="100"
+              :precision="2"
+              style="width: 100%"
+              placeholder="选填"
+            />
+            <span class="optional-hint">选填</span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -113,7 +117,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
@@ -161,7 +165,7 @@ const isEditing = ref(false)
 const editingRecordId = ref(null)
 
 const form = ref({
-  date: getCurrentLocalISOString(),  // 使用新的获取本地时间函数
+  date: getCurrentLocalISOString(),
   height: null,
   weight: null
 })
@@ -178,17 +182,21 @@ const sortedRecords = computed(() => {
 })
 
 const resetForm = () => {
-  form.value = {
-    date: getCurrentLocalISOString(),  // 使用新的获取本地时间函数
+  Object.assign(form.value, {
+    date: getCurrentLocalISOString(),
     height: null,
     weight: null
-  }
+  })
   isEditing.value = false
   editingRecordId.value = null
 }
 
-const editRecord = (row) => {
-  form.value = { ...row }
+const editRecord = async (row) => {
+  Object.assign(form.value, {
+    date: row.date,
+    height: row.height,
+    weight: row.weight
+  })
   isEditing.value = true
   editingRecordId.value = row.id
   showAddDialog.value = true
@@ -212,10 +220,22 @@ const deleteRecord = (record) => {
 }
 
 const saveRecord = () => {
+  // 验证必填字段
+  if (!form.value.height) {
+    ElMessage.warning('请输入身高')
+    return
+  }
+
+  const recordData = {
+    date: form.value.date || getCurrentLocalISOString(),
+    height: form.value.height,
+    weight: form.value.weight
+  }
+
   if (isEditing.value) {
-    recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, form.value)
+    recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, recordData)
   } else {
-    recordsStore.addRecord(currentChild.value.id, form.value)
+    recordsStore.addRecord(currentChild.value.id, recordData)
   }
   showAddDialog.value = false
   resetForm()
@@ -269,6 +289,11 @@ const importCsvHandler = async () => {
   } catch (error) {
     ElMessage.error('导入失败：' + error.message)
   }
+}
+
+const openAddDialog = async () => {
+  showAddDialog.value = true
+  resetForm()
 }
 </script>
 
@@ -500,6 +525,24 @@ const importCsvHandler = async () => {
       margin: 0;
     }
   }
+}
+
+.optional-field :deep(.el-form-item__label) {
+  color: #606266;
+}
+
+.field-with-hint {
+  position: relative;
+  width: 100%;
+}
+
+.optional-hint {
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #909399;
+  font-size: 12px;
 }
 </style>
 
