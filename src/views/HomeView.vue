@@ -24,7 +24,7 @@
       </div>
       <el-descriptions :column="2" border>
         <el-descriptions-item label="出生日期">{{ currentChild.birthDate }}</el-descriptions-item>
-        <el-descriptions-item label="年龄">{{ calculateAge(currentChild.birthDate) }}</el-descriptions-item>
+        <el-descriptions-item label="年龄">{{ calculateAgeText(new Date().toISOString(), currentChild.birthDate) }}</el-descriptions-item>
       </el-descriptions>
       <div class="chart-container">
         <div class="chart-header">
@@ -59,7 +59,7 @@ import {
   DataZoomComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import { formatDate, calculateAge } from '../utils/dateUtils'
+import { formatDate, calculateAge, calculateAgeText } from '../utils/dateUtils'
 import { ElEmpty, ElButton, ElDescriptions, ElDescriptionsItem, ElSelect, ElOption } from 'element-plus'
 
 const router = useRouter()
