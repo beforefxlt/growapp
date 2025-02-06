@@ -6,8 +6,23 @@
       </el-empty>
     </div>
     <div v-else class="child-info">
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="姓名">{{ currentChild.name }}</el-descriptions-item>
+      <div class="child-selector">
+        <span class="selector-label">选择儿童</span>
+        <el-select
+          v-model="selectedChildId"
+          @change="handleChildChange"
+          placeholder="请选择要查看的儿童"
+          class="child-select"
+        >
+          <el-option
+            v-for="child in childrenStore.children"
+            :key="child.id"
+            :label="child.name"
+            :value="child.id"
+          />
+        </el-select>
+      </div>
+      <el-descriptions :column="2" border>
         <el-descriptions-item label="出生日期">{{ currentChild.birthDate }}</el-descriptions-item>
         <el-descriptions-item label="年龄">{{ calculateAge(currentChild.birthDate) }}</el-descriptions-item>
       </el-descriptions>
@@ -28,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
@@ -52,17 +67,19 @@ const childrenStore = useChildrenStore()
 const recordsStore = useRecordsStore()
 const chartConfigStore = useChartConfigStore()
 
+const selectedChildId = ref(childrenStore.currentChildId)
 const hasChildren = computed(() => childrenStore.hasChildren)
 const currentChild = computed(() => childrenStore.currentChild)
 const chartType = ref('height')
 const chartRef = ref(null)
+const chartData = ref([])
+const chartOptions = ref(null)
 let chart = null
 
 async function goToSettings() {
   try {
-    await router.push({ name: 'settings', replace: true })
+    await router.push({ name: 'settings' })
     await router.isReady()
-    await new Promise(resolve => setTimeout(resolve, 100))
   } catch (error) {
     console.error('导航失败:', error)
   }
@@ -70,9 +87,8 @@ async function goToSettings() {
 
 async function goToRecords() {
   try {
-    await router.push({ name: 'records', replace: true })
+    await router.push({ name: 'records' })
     await router.isReady()
-    await new Promise(resolve => setTimeout(resolve, 100))
   } catch (error) {
     console.error('导航失败:', error)
   }
@@ -107,39 +123,12 @@ const getDataZoomConfig = () => ([
   }
 ])
 
-const initChart = () => {
-  if (chart) {
-    chart.dispose()
-  }
-  chart = echarts.init(chartRef.value, null, {
-    renderer: 'canvas',
-    useDirtyRect: false
-  })
-  
-  // 设置全局配置，只包含 X 轴的 dataZoom
-  chart.setOption({
-    animation: false,
-    dataZoom: getDataZoomConfig()
-  }, true)
-
-  // 监听 dataZoom，实现缩放间隔限制
-  chart.on('datazoom', function () {
-    const currentTime = Date.now()
-    if (this.lastZoomTime && currentTime - this.lastZoomTime < 200) {
-      return
-    }
-    this.lastZoomTime = currentTime
-  })
-}
-
-const chartOptions = ref(null)
-const chartData = ref([])
-
+// 更新图表数据的核心函数
 const updateChartData = () => {
-  if (!currentChild.value) return
+  if (!currentChild.value || !chartType.value) return
 
-  const records = recordsStore.getChildRecords(currentChild.value.id)
-  const sortedRecords = records.sort((a, b) => new Date(a.date) - new Date(b.date))
+  const records = recordsStore.getChildRecords(currentChild.value.id) || []
+  const sortedRecords = [...records].sort((a, b) => new Date(a.date) - new Date(b.date))
 
   chartData.value = sortedRecords.map(record => ({
     age: calculateAge(record.date, currentChild.value.birthDate),
@@ -151,8 +140,6 @@ const updateChartData = () => {
 }
 
 const updateChartOptions = () => {
-  if (!chartData.value.length) return
-
   const currentConfig = chartConfigStore.config[chartType.value]
 
   chartOptions.value = {
@@ -160,10 +147,13 @@ const updateChartOptions = () => {
     tooltip: {
       trigger: 'axis',
       formatter: function (params) {
-        const date = new Date(chartData.value[params[0].dataIndex].date)
-        const formattedDate = formatDate(date, 'YYYY年MM月DD日')
-        const age = params[0].value[0]
-        return `${formattedDate}<br/>年龄: ${formatAgeDisplay(age)}<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
+        if (params[0] && chartData.value[params[0].dataIndex]) {
+          const date = new Date(chartData.value[params[0].dataIndex].date)
+          const formattedDate = formatDate(date, 'YYYY年MM月DD日')
+          const age = params[0].value[0]
+          return `${formattedDate}<br/>年龄: ${formatAgeDisplay(age)}<br/>${params[0].seriesName}: ${params[0].value[1]}${chartType.value === 'height' ? 'cm' : 'kg'}`
+        }
+        return ''
       },
       backgroundColor: 'rgba(255, 255, 255, 0.95)',
       borderColor: '#807CA5',
@@ -185,7 +175,7 @@ const updateChartOptions = () => {
       nameLocation: 'middle',
       nameGap: 30,
       min: currentConfig.xAxisMin,
-      max: Math.max(currentConfig.xAxisMax, Math.ceil(Math.max(...chartData.value.map(item => item.age)))),
+      max: currentConfig.xAxisMax,
       axisLabel: {
         formatter: function (value) {
           return formatAgeDisplay(value)
@@ -210,7 +200,7 @@ const updateChartOptions = () => {
       type: 'line',
       smooth: true,
       showSymbol: true,
-      data: chartData.value.map(item => [item.age, item.value]),
+      data: chartData.value.map(item => [item.age, item.value]) || [],
       itemStyle: {
         color: '#807CA5'
       },
@@ -255,46 +245,101 @@ const registerComponents = () => {
   ])
 }
 
-// 监听配置变化
-watch(() => chartConfigStore.config, () => {
-  updateChartData()
-}, { deep: true })
+// 处理儿童切换
+const handleChildChange = async (childId) => {
+  try {
+    selectedChildId.value = childId
+    await childrenStore.setCurrentChild(childId)
+    await nextTick()
+    updateChartData()
+  } catch (error) {
+    console.error('切换儿童失败:', error)
+  }
+}
 
-// 在组件挂载时加载配置
-onMounted(async () => {
-  await chartConfigStore.loadFromLocal()
-  registerComponents()
-  initChart()
-  updateChartData()
-  
-  // 添加防抖的 resize 处理
-  let resizeTimer = null
-  window.addEventListener('resize', () => {
-    if (resizeTimer) clearTimeout(resizeTimer)
-    resizeTimer = setTimeout(() => {
-      chart?.resize()
-    }, 100)
-  })
-})
-
-// 监听图表类型变化
-watch(chartType, () => {
-  updateChartData()
-})
-
-// 监听当前儿童变化
-watch(() => childrenStore.currentChild, () => {
-  updateChartData()
-}, { deep: true })
-
-// 确保在组件卸载时清理
-onUnmounted(() => {
+// 初始化图表
+const initChart = () => {
   if (chart) {
-    chart.off('datazoom')
     chart.dispose()
   }
-  chart = null
+  
+  if (!chartRef.value) return
+  
+  chart = echarts.init(chartRef.value, null, {
+    renderer: 'canvas',
+    useDirtyRect: false
+  })
+  
+  chart.setOption({
+    animation: false,
+    dataZoom: getDataZoomConfig()
+  }, true)
+
+  chart.on('datazoom', function () {
+    const currentTime = Date.now()
+    if (this.lastZoomTime && currentTime - this.lastZoomTime < 200) {
+      return
+    }
+    this.lastZoomTime = currentTime
+  })
+}
+
+// 组件挂载时的初始化
+onMounted(async () => {
+  try {
+    await chartConfigStore.loadFromLocal()
+    registerComponents()
+    initChart()
+    
+    // 确保初始状态正确
+    if (childrenStore.currentChildId) {
+      selectedChildId.value = childrenStore.currentChildId
+      await nextTick()
+      updateChartData()
+    }
+    
+    // resize处理
+    const handleResize = () => {
+      if (chart) {
+        chart.resize()
+      }
+    }
+    
+    window.addEventListener('resize', handleResize)
+    onUnmounted(() => {
+      window.removeEventListener('resize', handleResize)
+      if (chart) {
+        chart.off('datazoom')
+        chart.dispose()
+      }
+      chart = null
+    })
+  } catch (error) {
+    console.error('初始化失败:', error)
+  }
 })
+
+// 监听相关状态变化
+watch([
+  () => childrenStore.currentChildId,
+  () => chartType.value,
+  () => recordsStore.records,
+  () => chartConfigStore.config
+], async () => {
+  if (currentChild.value) {
+    selectedChildId.value = childrenStore.currentChildId
+    await nextTick()
+    updateChartData()
+  }
+}, { deep: true, immediate: true })
+
+// 确保选择器状态同步
+watch(() => childrenStore.currentChildId, (newId) => {
+  if (newId && newId !== selectedChildId.value) {
+    selectedChildId.value = newId
+    updateChartData()
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -484,6 +529,41 @@ onUnmounted(() => {
       transform: scale(1.1);
     }
   }
+}
+
+.child-selector {
+  margin-bottom: 12px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selector-label {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.child-select {
+  flex: 1;
+}
+
+:deep(.child-select .el-input__wrapper) {
+  border-radius: 0;
+  background-color: #F6F6FB;
+  border: 1px solid #E4E7ED;
+  box-shadow: none;
+}
+
+:deep(.child-select .el-input__wrapper:hover) {
+  border-color: #807CA5;
+}
+
+:deep(.child-select .el-input__wrapper.is-focus) {
+  border-color: #807CA5;
+  box-shadow: 0 0 0 1px #807CA5;
 }
 </style>
 
