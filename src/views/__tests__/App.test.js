@@ -3,10 +3,11 @@ import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from '../../App.vue'
-import { ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElIcon } from 'element-plus'
+import { ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElIcon, ElFooter } from 'element-plus'
 import { useChildrenStore } from '../../stores/children'
 import { useRecordsStore } from '../../stores/records'
 import { House, List, Setting } from '@element-plus/icons-vue'
+import { RouterView } from 'vue-router'
 
 // 创建测试用的路由配置
 const router = createRouter({
@@ -52,7 +53,8 @@ describe('App.vue', () => {
           ElMain,
           ElMenu,
           ElMenuItem,
-          ElIcon
+          ElIcon,
+          ElFooter
         },
         stubs: {
           'router-view': true
@@ -193,19 +195,19 @@ describe('App.vue', () => {
   describe('布局结构', () => {
     it('渲染主要布局组件', () => {
       expect(wrapper.findComponent(ElContainer).exists()).toBe(true)
-      expect(wrapper.findComponent(ElHeader).exists()).toBe(true)
+      expect(wrapper.findComponent(ElFooter).exists()).toBe(true)
       expect(wrapper.findComponent(ElMain).exists()).toBe(true)
     })
 
-    it('header 高度正确', () => {
-      const header = wrapper.findComponent(ElHeader)
-      const style = header.attributes('style') || ''
+    it('footer 高度正确', () => {
+      const footer = wrapper.findComponent(ElFooter)
+      const style = footer.attributes('style') || ''
       expect(style).toContain('height: 70px')
     })
 
     it('router-view 正确渲染在 main 区域', () => {
       const main = wrapper.findComponent(ElMain)
-      expect(main.find('router-view-stub').exists()).toBe(true)
+      expect(main.findComponent(RouterView).exists()).toBe(true)
     })
   })
 

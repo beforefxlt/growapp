@@ -111,14 +111,19 @@ export const useRecordsStore = defineStore('records', {
     },
 
     deleteRecord(childId, recordId) {
-      const records = this.records[childId] || []
-      const index = records.findIndex(r => r.id === recordId)
-      if (index > -1) {
-        const deletedRecord = records.splice(index, 1)[0]
-        this.saveToLocal()
-        return deletedRecord
+      try {
+        const records = this.records[childId] || []
+        const index = records.findIndex(r => r.id === recordId)
+        if (index > -1) {
+          const deletedRecord = records.splice(index, 1)[0]
+          this.saveToLocal()
+          return deletedRecord
+        }
+        return null
+      } catch (error) {
+        console.error('删除记录失败:', error)
+        throw error
       }
-      return null
     },
 
     deleteChildRecords(childId) {

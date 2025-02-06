@@ -3,7 +3,8 @@ import { describe, test, expect, vi } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import App from './App.vue'
 import router from './router'
-import { ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElIcon } from 'element-plus'
+import { RouterView } from 'vue-router'
+import { ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElIcon, ElFooter } from 'element-plus'
 import { House, List, Setting } from '@element-plus/icons-vue'
 import { useChildrenStore } from './stores/children'
 
@@ -169,7 +170,7 @@ describe('App.vue', () => {
   })
 
   describe('布局结构', () => {
-    test('渲染主要布局组件', () => {
+    it('渲染主要布局组件', () => {
       const wrapper = mount(App, {
         global: {
           plugins: [router, createTestingPinia()],
@@ -179,11 +180,11 @@ describe('App.vue', () => {
         }
       })
       expect(wrapper.findComponent({ name: 'el-container' }).exists()).toBe(true)
-      expect(wrapper.findComponent({ name: 'el-header' }).exists()).toBe(true)
+      expect(wrapper.findComponent({ name: 'el-footer' }).exists()).toBe(true)
       expect(wrapper.findComponent({ name: 'el-main' }).exists()).toBe(true)
     })
 
-    test('header 高度正确', () => {
+    it('footer 高度正确', () => {
       const wrapper = mount(App, {
         global: {
           plugins: [router, createTestingPinia()],
@@ -192,12 +193,12 @@ describe('App.vue', () => {
           }
         }
       })
-      const header = wrapper.findComponent(ElHeader)
-      const style = header.attributes('style') || ''
+      const footer = wrapper.findComponent(ElFooter)
+      const style = footer.attributes('style') || ''
       expect(style).toContain('height: 70px')
     })
 
-    test('router-view 正确渲染在 main 区域', () => {
+    it('router-view 正确渲染在 main 区域', () => {
       const wrapper = mount(App, {
         global: {
           plugins: [router, createTestingPinia()],
@@ -206,8 +207,8 @@ describe('App.vue', () => {
           }
         }
       })
-      const main = wrapper.findComponent({ name: 'el-main' })
-      expect(main.findComponent({ name: 'router-view' }).exists()).toBe(true)
+      const main = wrapper.findComponent(ElMain)
+      expect(main.findComponent(RouterView).exists()).toBe(true)
     })
   })
 

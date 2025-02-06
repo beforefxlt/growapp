@@ -1,13 +1,20 @@
 <template>
   <el-container class="app-container">
-    <el-header class="app-header" style="height: 70px">
+    <div class="app-header">
+      生长发育记录
+    </div>
+    <el-main>
+      <router-view />
+    </el-main>
+    
+    <el-footer class="app-footer" style="height: 70px">
       <el-menu
         :router="false"
         mode="horizontal"
         :ellipsis="false"
         :default-active="currentRoute"
         @select="handleSelect"
-        class="nav-menu"
+        class="nav-menu-bottom"
       >
         <el-menu-item index="home" class="nav-item">
           <el-icon><House /></el-icon>
@@ -22,11 +29,7 @@
           设置
         </el-menu-item>
       </el-menu>
-    </el-header>
-    
-    <el-main>
-      <router-view />
-    </el-main>
+    </el-footer>
   </el-container>
 </template>
 
@@ -81,29 +84,54 @@ const handleSelect = async (key) => {
 <style scoped>
 .app-container {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-header {
-  padding: 0;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+  background-color: #ffffff;
   border-bottom: 1px solid #eee;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.app-footer {
+  padding: 0;
+  border-top: 1px solid #eee;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: #ffffff;
 }
 
 :deep(.el-main) {
   padding: 0 !important;
   overflow-x: hidden;
   background-color: #F6F6FB;
+  flex: 1;
+  padding-bottom: 70px !important;
+  padding-top: 50px !important; /* 为顶部标题栏预留空间 */
 }
 
-.nav-menu {
+.nav-menu-bottom {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  border-bottom: none;
+  border-top: none;
   height: 70px !important;
   background-color: #ffffff !important;
 }
 
-.nav-menu :deep(.nav-item) {
+.nav-menu-bottom :deep(.nav-item) {
   flex: 1;
   text-align: center;
   padding: 0 !important;
@@ -114,7 +142,7 @@ const handleSelect = async (key) => {
   height: 70px !important;
 }
 
-.nav-menu :deep(.el-menu-item) {
+.nav-menu-bottom :deep(.el-menu-item) {
   font-size: 20px !important;
   font-weight: 700 !important;
   height: 70px !important;
@@ -122,13 +150,14 @@ const handleSelect = async (key) => {
   padding: 0 24px !important;
 }
 
-.nav-menu :deep(.el-menu--horizontal > .el-menu-item.is-active) {
-  border-bottom: 3px solid var(--el-color-primary) !important;
+.nav-menu-bottom :deep(.el-menu--horizontal > .el-menu-item.is-active) {
+  border-top: 3px solid var(--el-color-primary) !important;
+  border-bottom: none !important;
   color: var(--el-color-primary) !important;
   font-weight: 800 !important;
 }
 
-.nav-menu :deep(.el-menu-item .el-icon) {
+.nav-menu-bottom :deep(.el-menu-item .el-icon) {
   margin-right: 12px !important;
   font-size: 24px !important;
   margin-top: -2px !important;

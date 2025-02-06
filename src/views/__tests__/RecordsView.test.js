@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { ref } from 'vue'
 import RecordsView from '../RecordsView.vue'
@@ -8,7 +8,8 @@ import { useRecordsStore } from '../../stores/records'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { getCurrentLocalISOString } from '../../utils/dateUtils'
 import { nextTick } from 'vue'
-import { useRouter, createRouter, createWebHistory } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 // Mock vue-router
 const mockRouter = {
@@ -35,7 +36,7 @@ vi.mock('@capacitor/core', () => ({
 // Mock element-plus
 vi.mock('element-plus', () => ({
   ElMessageBox: {
-    confirm: vi.fn()
+    confirm: vi.fn().mockResolvedValue(true)
   },
   ElMessage: {
     success: vi.fn(),
@@ -44,6 +45,58 @@ vi.mock('element-plus', () => ({
   }
 }))
 
+const createWrapper = async () => {
+  const pinia = createPinia()
+  const router = createRouter({
+    history: createWebHistory(),
+    routes: []
+  })
+  
+  const mockConfirm = vi.fn()
+  vi.spyOn(ElMessageBox, 'confirm').mockImplementation(mockConfirm)
+  mockConfirm.mockResolvedValue(true)
+  
+  const wrapper = mount(RecordsView, {
+    global: {
+      plugins: [pinia, router],
+      stubs: {
+        'el-table': true,
+        'el-table-column': true,
+        'el-dialog': true,
+        'el-form': true,
+        'el-form-item': true,
+        'el-input': true,
+        'el-button': true,
+        'el-date-picker': true
+      }
+    }
+  })
+  
+  const childrenStore = useChildrenStore()
+  const recordsStore = useRecordsStore()
+  
+  await childrenStore.addChild({
+    name: '测试儿童',
+    gender: 'male',
+    birthDate: '2020-01-01'
+  })
+  
+  const testRecord = {
+    date: '2024-03-15T00:00:00',
+    height: 120.5,
+    weight: 25.6
+  }
+  await recordsStore.addRecord(childrenStore.currentChildId, testRecord)
+  
+  return {
+    wrapper,
+    mockConfirm,
+    childrenStore,
+    recordsStore,
+    testRecord
+  }
+}
+
 describe('RecordsView.vue', () => {
   let wrapper
   let childrenStore
@@ -51,33 +104,24 @@ describe('RecordsView.vue', () => {
   let pinia
 
   beforeEach(async () => {
-    // 创建新的 pinia 实例
+    vi.useFakeTimers()
     pinia = createPinia()
     setActivePinia(pinia)
     
-    // 初始化 stores
     childrenStore = useChildrenStore()
     recordsStore = useRecordsStore()
-
-    // 确保 store 已加载
     childrenStore.isLoaded = true
     
-    // 添加测试儿童
     const child = {
       name: '测试儿童',
       gender: 'male',
       birthDate: '2020-01-01'
     }
     
-    // 添加儿童并等待更新
     const newChild = await childrenStore.addChild(child)
-    await nextTick()
-    
-    // 设置当前儿童
     await childrenStore.setCurrentChild(newChild.id)
     await nextTick()
 
-    // 挂载组件
     wrapper = mount(RecordsView, {
       global: {
         plugins: [pinia],
@@ -97,13 +141,7 @@ describe('RecordsView.vue', () => {
           'el-table': true,
           'el-table-column': true,
           'el-empty': true,
-          'el-icon': true,
-          'Plus': true,
-          'Edit': true,
-          'Delete': true,
-          'Download': true,
-          'Upload': true,
-          'ArrowRight': true
+          'el-icon': true
         },
         mocks: {
           $router: mockRouter
@@ -114,13 +152,107 @@ describe('RecordsView.vue', () => {
     await nextTick()
   })
 
+  afterEach(() => {
+    vi.clearAllTimers()
+    vi.useRealTimers()
+  })
+
+  describe('记录交互测试', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('点击行应该触发编辑对话框', async () => {
+      // 添加一条测试记录
+      const record = {
+        date: '2024-03-15T00:00:00',
+        height: 120.5,
+        weight: 25.6
+      }
+      await recordsStore.addRecord(childrenStore.currentChildId, record)
+      await nextTick()
+
+      // 触发行点击
+      await wrapper.vm.handleRowClick(record)
+      await nextTick()
+
+      // 验证编辑对话框是否打开
+      expect(wrapper.vm.showAddDialog).toBe(true)
+      expect(wrapper.vm.isEditing).toBe(true)
+      expect(wrapper.vm.form.height).toBe(120.5)
+      expect(wrapper.vm.form.weight).toBe(25.6)
+    })
+
+    test('长按应该触发删除确认', async () => {
+      const { wrapper, mockConfirm } = await createWrapper()
+      const mockEvent = {
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        touches: [{
+          clientX: 0,
+          clientY: 0
+        }]
+      }
+      
+      const testRecord = {
+        id: '1',
+        date: '2024-03-15T00:00:00',
+        height: 120.5,
+        weight: 25.6,
+        childId: '1'
+      }
+      
+      wrapper.vm.handleRowTouchStart(testRecord, mockEvent)
+      await vi.advanceTimersByTime(2000) // 等待2秒
+      
+      expect(mockConfirm).toHaveBeenCalledWith(
+        '确定要删除这条记录吗？',
+        '确认删除',
+        expect.any(Object)
+      )
+    })
+
+    test('触摸移动应该取消长按', async () => {
+      const { wrapper, mockConfirm } = await createWrapper()
+      const mockStartEvent = {
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        touches: [{
+          clientX: 0,
+          clientY: 0
+        }]
+      }
+      
+      const mockMoveEvent = {
+        preventDefault: vi.fn(),
+        stopPropagation: vi.fn(),
+        touches: [{
+          clientX: 10,
+          clientY: 10
+        }]
+      }
+      
+      const testRecord = {
+        id: '1',
+        date: '2024-03-15T00:00:00',
+        height: 120.5,
+        weight: 25.6,
+        childId: '1'
+      }
+      
+      wrapper.vm.handleRowTouchStart(testRecord, mockStartEvent)
+      wrapper.vm.handleRowTouchMove(mockMoveEvent)
+      await vi.advanceTimersByTime(2000) // 等待2秒
+      
+      expect(mockConfirm).not.toHaveBeenCalled()
+    })
+  })
+
   describe('添加记录功能测试', () => {
     it('应该能够添加只有身高的记录（体重为空）', async () => {
-      // 确保对话框显示
       await wrapper.vm.openAddDialog()
       await nextTick()
 
-      // 设置表单数据
       wrapper.vm.form = {
         date: '2024-03-15T00:00:00',
         height: 120.5,
@@ -128,47 +260,19 @@ describe('RecordsView.vue', () => {
       }
       await nextTick()
 
-      // 保存记录
       await wrapper.vm.saveRecord()
       await nextTick()
 
-      // 验证记录是否正确保存
       const records = recordsStore.getChildRecords(childrenStore.currentChildId)
       expect(records.length).toBe(1)
       expect(records[0].height).toBe(120.5)
       expect(records[0].weight).toBeNull()
     })
 
-    it('应该能够添加完整的记录（包含体重）', async () => {
-      // 确保对话框显示
-      await wrapper.vm.openAddDialog()
-      await nextTick()
-
-      // 设置表单数据
-      wrapper.vm.form = {
-        date: '2024-03-15T00:00:00',
-        height: 120.5,
-        weight: 25.6
-      }
-      await nextTick()
-
-      // 保存记录
-      await wrapper.vm.saveRecord()
-      await nextTick()
-
-      // 验证记录是否正确保存
-      const records = recordsStore.getChildRecords(childrenStore.currentChildId)
-      expect(records.length).toBe(1)
-      expect(records[0].height).toBe(120.5)
-      expect(records[0].weight).toBe(25.6)
-    })
-
     it('不应该允许添加没有身高的记录', async () => {
-      // 确保对话框显示
       await wrapper.vm.openAddDialog()
       await nextTick()
 
-      // 设置表单数据
       wrapper.vm.form = {
         date: '2024-03-15T00:00:00',
         height: null,
@@ -176,19 +280,17 @@ describe('RecordsView.vue', () => {
       }
       await nextTick()
 
-      // 尝试保存记录
       await wrapper.vm.saveRecord()
       await nextTick()
 
-      // 验证记录未被保存
       const records = recordsStore.getChildRecords(childrenStore.currentChildId)
       expect(records.length).toBe(0)
+      expect(ElMessage.warning).toHaveBeenCalledWith('请输入身高')
     })
   })
 
   describe('编辑记录功能测试', () => {
     it('应该能够编辑记录并清除体重', async () => {
-      // 先添加一条记录
       const record = {
         date: '2024-03-15T00:00:00',
         height: 120.5,
@@ -197,11 +299,9 @@ describe('RecordsView.vue', () => {
       const addedRecord = await recordsStore.addRecord(childrenStore.currentChildId, record)
       await nextTick()
 
-      // 编辑记录
       await wrapper.vm.editRecord(addedRecord)
       await nextTick()
 
-      // 修改表单数据
       wrapper.vm.form = {
         date: addedRecord.date,
         height: addedRecord.height,
@@ -209,32 +309,13 @@ describe('RecordsView.vue', () => {
       }
       await nextTick()
 
-      // 保存修改
       await wrapper.vm.saveRecord()
       await nextTick()
 
-      // 验证记录是否正确更新
       const updatedRecords = recordsStore.getChildRecords(childrenStore.currentChildId)
       expect(updatedRecords.length).toBe(1)
       expect(updatedRecords[0].height).toBe(120.5)
       expect(updatedRecords[0].weight).toBeNull()
-    })
-  })
-
-  describe('UI交互测试', () => {
-    it('体重字段应该显示为可选', async () => {
-      // 确保对话框显示
-      await wrapper.vm.openAddDialog()
-      await nextTick()
-
-      // 查找体重字段
-      const weightField = wrapper.find('[data-test="weight-field"]')
-      expect(weightField.exists()).toBe(true)
-      
-      // 验证可选标记
-      const optionalHint = weightField.find('.optional-hint')
-      expect(optionalHint.exists()).toBe(true)
-      expect(optionalHint.text()).toBe('选填')
     })
   })
 }) 

@@ -25,41 +25,51 @@
           <el-table 
             :data="sortedRecords" 
             style="width: 100%"
-          >
-            <el-table-column prop="date" label="测量日期" min-width="120" align="left">
+            @row-click="handleRowClick"
+            :highlight-current-row="false"
+            class="touch-action-none">
+            <el-table-column prop="date" label="测量日期" min-width="100" align="left">
               <template #default="{ row }">
-                <div class="date-cell">
+                <div class="date-cell"
+                  @touchstart.stop.prevent="handleRowTouchStart(row, $event)"
+                  @touchmove.stop.prevent="handleRowTouchMove($event)" 
+                  @touchend.stop.prevent="handleRowTouchEnd($event)"
+                  @touchcancel.stop.prevent="handleRowTouchEnd($event)">
                   {{ formatDate(row.date, 'YYYY-MM-DD') }}
                   <span class="time-text">{{ formatDate(row.date, 'HH:mm') }}</span>
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="年龄" min-width="100" align="left">
+            <el-table-column label="年龄" min-width="80" align="left">
               <template #default="{ row }">
-                <div class="age-cell">
+                <div class="age-cell"
+                  @touchstart.stop.prevent="handleRowTouchStart(row, $event)"
+                  @touchmove.stop.prevent="handleRowTouchMove($event)"
+                  @touchend.stop.prevent="handleRowTouchEnd($event)"
+                  @touchcancel.stop.prevent="handleRowTouchEnd($event)">
                   {{ calculateAgeText(row.date, currentChild.birthDate).replace('..', '') }}
                 </div>
               </template>
             </el-table-column>
-            <el-table-column label="身高" min-width="100" align="left">
+            <el-table-column label="身高" min-width="80" align="left">
               <template #default="{ row }">
-                <div class="value-cell">{{ row.height }}<span class="unit">cm</span></div>
+                <div class="value-cell"
+                  @touchstart.stop.prevent="handleRowTouchStart(row, $event)"
+                  @touchmove.stop.prevent="handleRowTouchMove($event)"
+                  @touchend.stop.prevent="handleRowTouchEnd($event)"
+                  @touchcancel.stop.prevent="handleRowTouchEnd($event)">
+                  {{ row.height }}<span class="unit">cm</span>
+                </div>
               </template>
             </el-table-column>
-            <el-table-column label="体重" min-width="100" align="left">
+            <el-table-column label="体重" min-width="80" align="left">
               <template #default="{ row }">
-                <div class="value-cell">{{ row.weight }}<span class="unit">kg</span></div>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="100" align="right" fixed="right">
-              <template #default="{ row }">
-                <div class="action-cell">
-                  <el-button type="primary" size="small" @click.stop="editRecord(row)">
-                    <el-icon><Edit /></el-icon>
-                  </el-button>
-                  <el-button type="danger" size="small" @click.stop="deleteRecord(row)">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
+                <div class="value-cell"
+                  @touchstart.stop.prevent="handleRowTouchStart(row, $event)"
+                  @touchmove.stop.prevent="handleRowTouchMove($event)"
+                  @touchend.stop.prevent="handleRowTouchEnd($event)"
+                  @touchcancel.stop.prevent="handleRowTouchEnd($event)">
+                  {{ row.weight }}<span class="unit">kg</span>
                 </div>
               </template>
             </el-table-column>
@@ -88,21 +98,22 @@
         <el-form-item label="身高(cm)">
           <el-input-number
             v-model="form.height"
-            :min="0"
+            :min="30"
             :max="200"
             :precision="1"
             style="width: 100%"
+            placeholder="30-200"
           />
         </el-form-item>
         <el-form-item label="体重(kg)" class="optional-field" data-test="weight-field">
           <div class="field-with-hint">
             <el-input-number
               v-model="form.weight"
-              :min="0"
+              :min="2"
               :max="100"
               :precision="2"
               style="width: 100%"
-              placeholder="选填"
+              placeholder="选填 2-100"
             />
             <span class="optional-hint">选填</span>
           </div>
@@ -117,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
@@ -202,43 +213,212 @@ const editRecord = async (row) => {
   showAddDialog.value = true
 }
 
-const deleteRecord = (record) => {
-  ElMessageBox.confirm(
-    '确定要删除这条记录吗？删除后无法恢复。',
-    '删除确认',
-    {
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    recordsStore.deleteRecord(currentChild.value.id, record.id)
-    ElMessage.success('记录已删除')
-  }).catch(() => {
-    // 用户取消删除
-  })
-}
+const longPressTimer = ref(null)
+const longPressDelay = 600 // 减少到600ms使响应更快
+const touchStartX = ref(0)
+const touchStartY = ref(0)
+const touchStartTime = ref(0)
+const touchMoved = ref(false)
+const pressedRow = ref(null)
+const isPressing = ref(false)
+const MOVE_THRESHOLD = 5 // 移动阈值（像素）
+const CLICK_TIMEOUT = 300 // 点击超时时间（毫秒）
 
-const saveRecord = () => {
-  // 验证必填字段
-  if (!form.value.height) {
-    ElMessage.warning('请输入身高')
+const handleRowClick = (row) => {
+  // 如果正在长按，不触发点击
+  if (isPressing.value) {
     return
   }
+  // 直接触发编辑
+  editRecord(row)
+}
 
-  const recordData = {
-    date: form.value.date || getCurrentLocalISOString(),
-    height: form.value.height,
-    weight: form.value.weight
+const handleRowTouchStart = (row, event) => {
+  // 阻止默认行为和冒泡
+  event.preventDefault()
+  event.stopPropagation()
+ 
+  // 清理之前可能存在的定时器
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
   }
+  
+  // 重置状态
+  touchMoved.value = false
+  pressedRow.value = {...row}
+  isPressing.value = true
+  touchStartTime.value = Date.now()
+  
+  // 记录起始触摸位置
+  if (event.touches && event.touches[0]) {
+    touchStartX.value = event.touches[0].clientX
+    touchStartY.value = event.touches[0].clientY
+  }
+  
+  // 设置长按定时器
+  longPressTimer.value = setTimeout(() => {
+    if (!touchMoved.value && pressedRow.value) {
+      // 保存要删除的记录的完整副本
+      const recordToDelete = {...pressedRow.value}
+      
+      // 添加触觉反馈
+      if (navigator.vibrate) {
+        navigator.vibrate([50])
+      }
+      
+      // 显示删除确认对话框
+      ElMessageBox.confirm(
+        '确定要删除这条记录吗？',
+        '确认删除',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning',
+          closeOnClickModal: false,
+          closeOnPressEscape: false
+        }
+      ).then(async () => {
+        // 使用保存的记录副本进行删除
+        const success = await deleteRecord(recordToDelete)
+        if (success) {
+          ElMessage.success('删除成功')
+          // 添加删除成功的触觉反馈
+          if (navigator.vibrate) {
+            navigator.vibrate([30, 50, 30])
+          }
+        }
+      }).catch(() => {
+        // 用户取消删除，不需要特殊处理
+      }).finally(() => {
+        // 重置状态
+        resetTouchState()
+      })
+    }
+  }, longPressDelay)
+}
 
-  if (isEditing.value) {
-    recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, recordData)
-  } else {
-    recordsStore.addRecord(currentChild.value.id, recordData)
+const handleRowTouchMove = (event) => {
+  if (!isPressing.value) return
+  
+  const touch = event.touches[0]
+  const moveX = Math.abs(touch.clientX - touchStartX.value)
+  const moveY = Math.abs(touch.clientY - touchStartY.value)
+  
+  // 如果移动距离超过阈值，标记为已移动
+  if (moveX > MOVE_THRESHOLD || moveY > MOVE_THRESHOLD) {
+    touchMoved.value = true
+    // 清除长按定时器
+    if (longPressTimer.value) {
+      clearTimeout(longPressTimer.value)
+      longPressTimer.value = null
+    }
   }
-  showAddDialog.value = false
-  resetForm()
+}
+
+const handleRowTouchEnd = (event) => {
+  event.preventDefault()
+  event.stopPropagation()
+  
+  const touchDuration = Date.now() - touchStartTime.value
+  
+  // 如果触摸时间小于长按时间，且没有明显移动，则触发点击编辑
+  if (touchDuration < longPressDelay && !touchMoved.value && pressedRow.value) {
+    editRecord(pressedRow.value)
+  }
+  
+  // 清理长按定时器和状态
+  resetTouchState()
+}
+
+const resetTouchState = () => {
+  // 清理定时器和状态
+  if (longPressTimer.value) {
+    clearTimeout(longPressTimer.value)
+    longPressTimer.value = null
+  }
+  
+  // 重置所有状态
+  pressedRow.value = null
+  isPressing.value = false
+  touchMoved.value = false
+  touchStartTime.value = 0
+}
+
+const deleteRecord = async (record) => {
+  try {
+    if (!currentChild.value || !currentChild.value.id) {
+      ElMessage.error('删除失败：未选择儿童或儿童信息无效')
+      return false
+    }
+    
+    if (!record || !record.id) {
+      console.error('删除失败 - 记录数据:', record)
+      ElMessage.error('删除失败：记录数据无效')
+      return false
+    }
+
+    // 确保记录属于当前儿童
+    if (record.childId !== currentChild.value.id) {
+      console.error('删除失败 - 记录不属于当前儿童:', record)
+      ElMessage.error('删除失败：记录不属于当前儿童')
+      return false
+    }
+
+    const result = recordsStore.deleteRecord(currentChild.value.id, record.id)
+    if (result) {
+      return true
+    } else {
+      ElMessage.error('删除失败：记录不存在')
+      return false
+    }
+  } catch (error) {
+    console.error('删除记录时发生错误:', error)
+    ElMessage.error(`删除失败：${error.message || '未知错误'}`)
+    return false
+  }
+}
+
+const saveRecord = async () => {
+  try {
+    // 验证必填字段
+    if (!form.value.height) {
+      ElMessage.warning('请输入身高')
+      return
+    }
+
+    // 验证身高范围
+    if (form.value.height < 30 || form.value.height > 200) {
+      ElMessage.warning('身高必须在 30-200 厘米之间')
+      return
+    }
+
+    // 验证体重范围（如果有填写）
+    if (form.value.weight !== null && form.value.weight !== undefined) {
+      if (form.value.weight < 2 || form.value.weight > 100) {
+        ElMessage.warning('体重必须在 2-100 千克之间')
+        return
+      }
+    }
+
+    const recordData = {
+      date: form.value.date || getCurrentLocalISOString(),
+      height: form.value.height,
+      weight: form.value.weight
+    }
+
+    if (isEditing.value) {
+      await recordsStore.updateRecord(currentChild.value.id, editingRecordId.value, recordData)
+      ElMessage.success('记录更新成功')
+    } else {
+      await recordsStore.addRecord(currentChild.value.id, recordData)
+      ElMessage.success('记录添加成功')
+    }
+    showAddDialog.value = false
+    resetForm()
+  } catch (error) {
+    console.error('保存记录失败:', error)
+    ElMessage.error(`保存失败：${error.message || '未知错误'}`)
+  }
 }
 
 const exportToCsvHandler = async () => {
@@ -295,6 +475,11 @@ const openAddDialog = async () => {
   showAddDialog.value = true
   resetForm()
 }
+
+// 在组件卸载时清理
+onUnmounted(() => {
+  resetTouchState()
+})
 </script>
 
 <style scoped>
@@ -388,7 +573,8 @@ const openAddDialog = async () => {
   padding: 0;
   width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 :deep(.el-table) {
@@ -407,10 +593,11 @@ const openAddDialog = async () => {
   :is(td) {
     padding: 8px;
     border-bottom: 1px solid #E5E7EB;
+    cursor: pointer;
   }
 
-  :is(td).actions {
-    text-align: right;
+  .el-table__row {
+    touch-action: none;
   }
 }
 
@@ -421,6 +608,9 @@ const openAddDialog = async () => {
   align-items: center;
   gap: 2px;
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .time-text, .unit {
@@ -544,6 +734,13 @@ const openAddDialog = async () => {
   color: #909399;
   font-size: 12px;
 }
+
+:deep(.el-table__row) {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
 </style>
 
 <!-- 添加全局样式块，确保更高优先级 -->
@@ -591,5 +788,63 @@ const openAddDialog = async () => {
   border-radius: 0;
   font-size: 0.95rem;
   padding: 8px 16px !important;
+}
+
+/* 添加全局样式 */
+.touch-action-none {
+  touch-action: none !important;
+}
+
+.el-table__body {
+  touch-action: none !important;
+}
+
+.el-table__row {
+  touch-action: none !important;
+}
+
+/* 确保单元格内容也禁用默认触摸行为 */
+.date-cell, .age-cell, .value-cell {
+  touch-action: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
+/* 禁用表格行的选中效果 */
+.records-container :deep(.el-table__row) {
+  &:hover,
+  &:focus,
+  &.current-row {
+    background-color: transparent !important;
+  }
+  
+  &.hover-row > td {
+    background-color: transparent !important;
+  }
+}
+
+/* 添加点击时的视觉反馈 */
+.records-container :deep(.el-table__row) {
+  td {
+    transition: background-color 0.2s;
+    
+    &:active {
+      background-color: rgba(64, 150, 255, 0.1) !important;
+    }
+  }
+}
+
+/* 确保单元格内容的触摸行为被禁用 */
+.date-cell, .age-cell, .value-cell {
+  touch-action: none !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  transition: opacity 0.2s;
+  
+  &:active {
+    opacity: 0.7;
+  }
 }
 </style>
