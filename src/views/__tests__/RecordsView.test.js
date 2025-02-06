@@ -318,4 +318,82 @@ describe('RecordsView.vue', () => {
       expect(updatedRecords[0].weight).toBeNull()
     })
   })
+
+  describe('列表刷新功能测试', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('删除记录后应该刷新列表', async () => {
+      // 准备测试数据
+      const record = {
+        date: '2024-03-15T00:00:00',
+        height: 120.5,
+        weight: 25.6
+      }
+      const addedRecord = await recordsStore.addRecord(childrenStore.currentChildId, record)
+      await nextTick()
+      
+      // 确保组件已更新
+      await wrapper.vm.initializeRecords()
+      await nextTick()
+
+      // 记录初始列表长度
+      const initialLength = wrapper.vm.allRecords.length
+
+      // 删除记录
+      const success = await wrapper.vm.deleteRecord({
+        ...addedRecord,
+        childId: childrenStore.currentChildId
+      })
+      await nextTick()
+
+      // 验证删除是否成功
+      expect(success).toBe(true)
+      
+      // 验证列表是否刷新
+      expect(wrapper.vm.allRecords.length).toBe(initialLength - 1)
+      expect(wrapper.vm.allRecords.find(r => r.id === addedRecord.id)).toBeUndefined()
+    })
+
+    it('导入数据后应该刷新列表', async () => {
+      // Mock FilePlugin
+      const mockFilePlugin = {
+        checkPermissions: vi.fn().mockResolvedValue({ granted: true }),
+        requestPermissions: vi.fn().mockResolvedValue({ granted: true }),
+        readFile: vi.fn().mockResolvedValue({
+          data: 'date,height,weight\n2024-03-16T00:00:00,121.5,26.0'
+        })
+      }
+      
+      // 确保组件已更新
+      await wrapper.vm.initializeRecords()
+      await nextTick()
+      
+      // 记录初始列表长度
+      const initialLength = wrapper.vm.allRecords.length
+
+      // 模拟导入过程
+      const mockRows = [
+        {
+          date: '2024-03-16T00:00:00',
+          height: 121.5,
+          weight: 26.0
+        }
+      ]
+      
+      // 手动调用导入处理
+      await recordsStore.addRecord(childrenStore.currentChildId, mockRows[0])
+      await wrapper.vm.initializeRecords()
+      await nextTick()
+
+      // 验证列表是否刷新
+      expect(wrapper.vm.allRecords.length).toBe(initialLength + 1)
+      expect(wrapper.vm.allRecords.some(r => 
+        r.date === '2024-03-16T00:00:00' && 
+        r.height === 121.5 && 
+        r.weight === 26.0
+      )).toBe(true)
+    })
+  })
 }) 

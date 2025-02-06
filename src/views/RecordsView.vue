@@ -21,13 +21,18 @@
           </el-button>
         </div>
 
-        <div class="records-table">
+        <div class="records-table" ref="tableWrapper">
           <el-table 
-            :data="sortedRecords" 
+            :data="displayedRecords" 
             style="width: 100%"
             @row-click="handleRowClick"
             :highlight-current-row="false"
-            class="touch-action-none">
+            height="calc(100vh - 150px)"
+            class="touch-action-none"
+            v-infinite-scroll="loadMore"
+            :infinite-scroll-disabled="loading"
+            :infinite-scroll-distance="20"
+            :infinite-scroll-immediate="false">
             <el-table-column prop="date" label="测量日期" min-width="100" align="left">
               <template #default="{ row }">
                 <div class="date-cell"
@@ -74,6 +79,15 @@
               </template>
             </el-table-column>
           </el-table>
+          
+          <div v-if="loading" class="loading-more">
+            <el-icon class="loading-icon"><Loading /></el-icon>
+            <span>加载中...</span>
+          </div>
+          
+          <div v-if="noMoreData" class="no-more-data">
+            <span>没有更多数据了</span>
+          </div>
         </div>
       </template>
     </div>
@@ -128,11 +142,11 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onUnmounted } from 'vue'
+import { ref, computed, reactive, onUnmounted, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildrenStore } from '../stores/children'
 import { useRecordsStore } from '../stores/records'
-import { Plus, Edit, Delete, Download, Upload, ArrowRight } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Download, Upload, ArrowRight, Loading } from '@element-plus/icons-vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import { Capacitor, registerPlugin } from '@capacitor/core'
@@ -181,16 +195,68 @@ const form = ref({
   weight: null
 })
 
-const sortedRecords = computed(() => {
-  console.log('sortedRecords currentChild:', currentChild.value)
-  if (!currentChild.value) return []
+const PAGE_SIZE = 20 // 每页加载的记录数
+const loading = ref(false)
+const currentPage = ref(1)
+const noMoreData = ref(false)
+const tableWrapper = ref(null)
+
+// 修改 sortedRecords 计算属性为普通的 ref
+const allRecords = ref([])
+
+// 显示的记录
+const displayedRecords = computed(() => {
+  return allRecords.value.slice(0, currentPage.value * PAGE_SIZE)
+})
+
+// 初始化数据
+const initializeRecords = () => {
+  if (!currentChild.value) {
+    allRecords.value = []
+    return
+  }
   
   // 获取所有记录并按时间排序（最新的在前）
   const records = [...recordsStore.getChildRecords(currentChild.value.id)]
-  console.log('records:', records)
+  allRecords.value = records.sort((a, b) => new Date(b.date) - new Date(a.date))
+  currentPage.value = 1
+  noMoreData.value = allRecords.value.length <= PAGE_SIZE
+}
+
+// 加载更多数据
+const loadMore = async () => {
+  if (loading.value || noMoreData.value) return
   
-  return records.sort((a, b) => new Date(b.date) - new Date(a.date))
-})
+  loading.value = true
+  
+  try {
+    // 模拟异步加载
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    const totalRecords = allRecords.value.length
+    const currentDisplayed = currentPage.value * PAGE_SIZE
+    
+    if (currentDisplayed >= totalRecords) {
+      noMoreData.value = true
+    } else {
+      currentPage.value++
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+// 监听数据变化
+watch(() => currentChild.value?.id, () => {
+  initializeRecords()
+}, { immediate: true })
+
+// 重置加载状态
+const resetLoadingState = () => {
+  currentPage.value = 1
+  noMoreData.value = false
+  loading.value = false
+}
 
 const resetForm = () => {
   Object.assign(form.value, {
@@ -366,6 +432,8 @@ const deleteRecord = async (record) => {
 
     const result = recordsStore.deleteRecord(currentChild.value.id, record.id)
     if (result) {
+      // 删除成功后重新初始化数据
+      initializeRecords()
       return true
     } else {
       ElMessage.error('删除失败：记录不存在')
@@ -415,6 +483,8 @@ const saveRecord = async () => {
     }
     showAddDialog.value = false
     resetForm()
+    // 重新初始化数据
+    initializeRecords()
   } catch (error) {
     console.error('保存记录失败:', error)
     ElMessage.error(`保存失败：${error.message || '未知错误'}`)
@@ -426,7 +496,7 @@ const exportToCsvHandler = async () => {
     const permissionGranted = await checkAndRequestPermissions(FilePlugin)
     if (!permissionGranted) return
 
-    await exportToCsv(sortedRecords.value, currentChild.value.name, FilePlugin)
+    await exportToCsv(displayedRecords.value, currentChild.value.name, FilePlugin)
   } catch (error) {
     ElMessage.error('导出失败：' + error.message)
   }
@@ -464,6 +534,8 @@ const importCsvHandler = async () => {
         ElMessage.info('没有新的记录需要导入')
       } else {
         ElMessage.success(`导入成功：${resultMessage.join('，')}`)
+        // 导入成功后重新初始化数据列表
+        initializeRecords()
       }
     })
   } catch (error) {
@@ -573,32 +645,50 @@ onUnmounted(() => {
   padding: 0;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
+  overflow: hidden;
+  position: relative;
+  height: calc(100vh - 150px);
+}
+
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  color: #909399;
+  font-size: 14px;
+  
+  .loading-icon {
+    margin-right: 8px;
+    animation: rotating 2s linear infinite;
+  }
+}
+
+.no-more-data {
+  text-align: center;
+  color: #909399;
+  font-size: 14px;
+  padding: 10px 0;
+  background: #f5f7fa;
+}
+
+@keyframes rotating {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+:deep(.el-table__body-wrapper) {
+  overflow-y: auto !important;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
 
 :deep(.el-table) {
-  --el-table-header-bg-color: #F4F5F7;
-  --el-table-row-hover-bg-color: #F6F6FB;
-  
-  :is(th) {
-    background-color: #F6F6FB;
-    color: #2F2F38;
-    font-weight: 500;
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #E5E7EB;
-  }
-  
-  :is(td) {
-    padding: 8px;
-    border-bottom: 1px solid #E5E7EB;
-    cursor: pointer;
-  }
-
-  .el-table__row {
-    touch-action: none;
-  }
+  height: 100% !important;
 }
 
 .date-cell, .age-cell, .value-cell {
