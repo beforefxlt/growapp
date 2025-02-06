@@ -28,7 +28,6 @@
             @row-click="handleRowClick"
             :highlight-current-row="false"
             height="calc(100vh - 150px)"
-            class="touch-action-none"
             v-infinite-scroll="loadMore"
             :infinite-scroll-disabled="loading"
             :infinite-scroll-distance="20"
@@ -833,69 +832,23 @@ onUnmounted(() => {
 }
 </style>
 
-<!-- 添加全局样式块，确保更高优先级 -->
 <style>
-/* 使用更具体的选择器来提高优先级 */
-.records-container .action-buttons .btn-add.el-button--primary {
-  background-color: #4096FF !important;
-  color: #FFFFFF !important;
-  border: none !important;
-}
-.records-container .action-buttons .btn-add.el-button--primary:hover,
-.records-container .action-buttons .btn-add.el-button--primary:focus {
-  background-color: #69B1FF !important;
-  border: none !important;
-}
-
-.records-container .action-buttons .btn-export.el-button--primary {
-  background-color: #52C41A !important;
-  color: #FFFFFF !important;
-  border: none !important;
-}
-.records-container .action-buttons .btn-export.el-button--primary:hover,
-.records-container .action-buttons .btn-export.el-button--primary:focus {
-  background-color: #73D13D !important;
-  border: none !important;
-}
-
-.records-container .action-buttons .btn-import.el-button--primary {
-  background-color: #722ED1 !important;
-  color: #FFFFFF !important;
-  border: none !important;
-}
-.records-container .action-buttons .btn-import.el-button--primary:hover,
-.records-container .action-buttons .btn-import.el-button--primary:focus {
-  background-color: #9254DE !important;
-  border: none !important;
-}
-
-/* 共享的按钮基础样式 */
-.records-container .action-buttons .el-button {
-  flex: 1;
-  height: 44px;
-  margin: 0;
-  border: none !important;
-  border-radius: 0;
-  font-size: 0.95rem;
-  padding: 8px 16px !important;
-}
-
-/* 添加全局样式 */
+/* 移除全局的 touch-action 限制 */
 .touch-action-none {
-  touch-action: none !important;
+  touch-action: auto !important;
 }
 
 .el-table__body {
-  touch-action: none !important;
+  touch-action: auto !important;
 }
 
 .el-table__row {
-  touch-action: none !important;
+  touch-action: auto !important;
 }
 
-/* 确保单元格内容也禁用默认触摸行为 */
+/* 只在单元格内容上保留必要的触摸行为限制 */
 .date-cell, .age-cell, .value-cell {
-  touch-action: none !important;
+  touch-action: auto !important;
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
   user-select: none !important;
@@ -925,9 +878,8 @@ onUnmounted(() => {
   }
 }
 
-/* 确保单元格内容的触摸行为被禁用 */
+/* 确保单元格内容的选中被禁用，但允许滚动 */
 .date-cell, .age-cell, .value-cell {
-  touch-action: none !important;
   -webkit-touch-callout: none !important;
   -webkit-user-select: none !important;
   user-select: none !important;
@@ -936,5 +888,35 @@ onUnmounted(() => {
   &:active {
     opacity: 0.7;
   }
+}
+
+/* 按钮样式 */
+.records-container .action-buttons .btn-add.el-button--primary {
+  background-color: #4096FF !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+
+.records-container .action-buttons .btn-export.el-button--primary {
+  background-color: #52C41A !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+
+.records-container .action-buttons .btn-import.el-button--primary {
+  background-color: #722ED1 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+
+/* 共享的按钮基础样式 */
+.records-container .action-buttons .el-button {
+  flex: 1;
+  height: 44px;
+  margin: 0;
+  border: none !important;
+  border-radius: 0;
+  font-size: 0.95rem;
+  padding: 8px 16px !important;
 }
 </style>
