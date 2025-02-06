@@ -1,9 +1,111 @@
 <template>
   <div class="settings-container">
     <div class="settings-header">
-      <h2 class="center-title">儿童信息管理</h2>
+      <h2 class="center-title" @click="showMainDialog = true">儿童信息管理</h2>
     </div>
 
+    <div class="chart-config">
+      <el-card class="chart-config-card">
+        <template #header>
+          <div class="card-header">
+            <span>图表配置</span>
+          </div>
+        </template>
+        <div class="config-content">
+          <el-tabs v-model="activeTab">
+            <el-tab-pane label="身高曲线" name="height">
+              <el-form label-position="top">
+                <el-form-item label="X轴范围（年龄/岁）">
+                  <div class="range-inputs">
+                    <el-input-number 
+                      v-model="heightConfig.xAxisMin" 
+                      :min="0" 
+                      :max="heightConfig.xAxisMax"
+                      @change="updateHeightConfig"
+                    />
+                    <span class="range-separator">至</span>
+                    <el-input-number 
+                      v-model="heightConfig.xAxisMax" 
+                      :min="heightConfig.xAxisMin" 
+                      :max="100"
+                      @change="updateHeightConfig"
+                    />
+                  </div>
+                </el-form-item>
+                <el-form-item label="Y轴范围（厘米）">
+                  <div class="range-inputs">
+                    <el-input-number 
+                      v-model="heightConfig.yAxisMin" 
+                      :min="0" 
+                      :max="heightConfig.yAxisMax"
+                      @change="updateHeightConfig"
+                    />
+                    <span class="range-separator">至</span>
+                    <el-input-number 
+                      v-model="heightConfig.yAxisMax" 
+                      :min="heightConfig.yAxisMin" 
+                      :max="250"
+                      @change="updateHeightConfig"
+                    />
+                  </div>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+            <el-tab-pane label="体重曲线" name="weight">
+              <el-form label-position="top">
+                <el-form-item label="X轴范围（年龄/岁）">
+                  <div class="range-inputs">
+                    <el-input-number 
+                      v-model="weightConfig.xAxisMin" 
+                      :min="0" 
+                      :max="weightConfig.xAxisMax"
+                      @change="updateWeightConfig"
+                    />
+                    <span class="range-separator">至</span>
+                    <el-input-number 
+                      v-model="weightConfig.xAxisMax" 
+                      :min="weightConfig.xAxisMin" 
+                      :max="100"
+                      @change="updateWeightConfig"
+                    />
+                  </div>
+                </el-form-item>
+                <el-form-item label="Y轴范围（千克）">
+                  <div class="range-inputs">
+                    <el-input-number 
+                      v-model="weightConfig.yAxisMin" 
+                      :min="0" 
+                      :max="weightConfig.yAxisMax"
+                      @change="updateWeightConfig"
+                    />
+                    <span class="range-separator">至</span>
+                    <el-input-number 
+                      v-model="weightConfig.yAxisMax" 
+                      :min="weightConfig.yAxisMin" 
+                      :max="150"
+                      @change="updateWeightConfig"
+                    />
+                  </div>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
+      </el-card>
+    </div>
+
+    <div class="about-button">
+      <el-button @click="showAboutDialog = true">关于</el-button>
+    </div>
+  </div>
+
+  <!-- 主弹窗 -->
+  <el-dialog
+    v-model="showMainDialog"
+    title="儿童信息管理"
+    width="90%"
+    class="main-dialog"
+  >
     <div class="settings-content">
       <div class="action-button">
         <el-button @click="showSyncDialog = true">
@@ -50,192 +152,101 @@
           </div>
         </el-card>
       </div>
-
-      <div class="chart-config">
-        <el-card class="chart-config-card">
-          <template #header>
-            <div class="card-header">
-              <span>图表配置</span>
-            </div>
-          </template>
-          <div class="config-content">
-            <el-tabs v-model="activeTab">
-              <el-tab-pane label="身高曲线" name="height">
-                <el-form label-position="top">
-                  <el-form-item label="X轴范围（年龄/岁）">
-                    <div class="range-inputs">
-                      <el-input-number 
-                        v-model="heightConfig.xAxisMin" 
-                        :min="0" 
-                        :max="heightConfig.xAxisMax"
-                        @change="updateHeightConfig"
-                      />
-                      <span class="range-separator">至</span>
-                      <el-input-number 
-                        v-model="heightConfig.xAxisMax" 
-                        :min="heightConfig.xAxisMin" 
-                        :max="100"
-                        @change="updateHeightConfig"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="Y轴范围（厘米）">
-                    <div class="range-inputs">
-                      <el-input-number 
-                        v-model="heightConfig.yAxisMin" 
-                        :min="0" 
-                        :max="heightConfig.yAxisMax"
-                        @change="updateHeightConfig"
-                      />
-                      <span class="range-separator">至</span>
-                      <el-input-number 
-                        v-model="heightConfig.yAxisMax" 
-                        :min="heightConfig.yAxisMin" 
-                        :max="250"
-                        @change="updateHeightConfig"
-                      />
-                    </div>
-                  </el-form-item>
-                </el-form>
-              </el-tab-pane>
-              <el-tab-pane label="体重曲线" name="weight">
-                <el-form label-position="top">
-                  <el-form-item label="X轴范围（年龄/岁）">
-                    <div class="range-inputs">
-                      <el-input-number 
-                        v-model="weightConfig.xAxisMin" 
-                        :min="0" 
-                        :max="weightConfig.xAxisMax"
-                        @change="updateWeightConfig"
-                      />
-                      <span class="range-separator">至</span>
-                      <el-input-number 
-                        v-model="weightConfig.xAxisMax" 
-                        :min="weightConfig.xAxisMin" 
-                        :max="100"
-                        @change="updateWeightConfig"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="Y轴范围（千克）">
-                    <div class="range-inputs">
-                      <el-input-number 
-                        v-model="weightConfig.yAxisMin" 
-                        :min="0" 
-                        :max="weightConfig.yAxisMax"
-                        @change="updateWeightConfig"
-                      />
-                      <span class="range-separator">至</span>
-                      <el-input-number 
-                        v-model="weightConfig.yAxisMax" 
-                        :min="weightConfig.yAxisMin" 
-                        :max="150"
-                        @change="updateWeightConfig"
-                      />
-                    </div>
-                  </el-form-item>
-                </el-form>
-              </el-tab-pane>
-            </el-tabs>
-          </div>
-        </el-card>
-      </div>
-
-      <div class="about-button">
-        <el-button @click="showAboutDialog = true">关于</el-button>
-      </div>
     </div>
+  </el-dialog>
 
-    <el-dialog
-      v-model="showAddDialog"
-      :title="isEditing ? '编辑儿童信息' : '添加儿童'"
-      width="90%"
-      class="child-dialog"
-    >
-      <el-form :model="form" label-width="100px">
-        <el-form-item label="姓名">
-          <el-input v-model="form.name" placeholder="请输入姓名" />
-        </el-form-item>
-        <el-form-item label="性别">
-          <el-radio-group v-model="form.gender">
-            <el-radio label="male">男</el-radio>
-            <el-radio label="female">女</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="出生日期">
-          <el-date-picker
-            v-model="form.birthDate"
-            type="date"
-            placeholder="选择出生日期"
-            format="YYYY年MM月DD日"
-            value-format="YYYY-MM-DD"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddDialog = false">取消</el-button>
-        <el-button type="primary" @click="saveChild">保存</el-button>
-      </template>
-    </el-dialog>
+  <!-- 添加/编辑儿童弹窗 -->
+  <el-dialog
+    v-model="showAddDialog"
+    :title="isEditing ? '编辑儿童信息' : '添加儿童'"
+    width="90%"
+    class="child-dialog"
+  >
+    <el-form :model="form" label-width="100px">
+      <el-form-item label="姓名">
+        <el-input v-model="form.name" placeholder="请输入姓名" />
+      </el-form-item>
+      <el-form-item label="性别">
+        <el-radio-group v-model="form.gender">
+          <el-radio label="male">男</el-radio>
+          <el-radio label="female">女</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="出生日期">
+        <el-date-picker
+          v-model="form.birthDate"
+          type="date"
+          placeholder="选择出生日期"
+          format="YYYY年MM月DD日"
+          value-format="YYYY-MM-DD"
+          style="width: 100%"
+        />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="showAddDialog = false">取消</el-button>
+      <el-button type="primary" @click="saveChild">保存</el-button>
+    </template>
+  </el-dialog>
 
-    <el-dialog
-      v-model="showSyncDialog"
-      title="数据同步"
-      width="90%"
-      class="sync-dialog"
-      :close-on-click-modal="false"
-    >
-      <el-form label-position="top">
-        <el-form-item label="选择儿童">
-          <el-select v-model="selectedChildId" placeholder="请选择要同步的儿童" style="width: 100%">
-            <el-option
-              v-for="child in children"
-              :key="child.id"
-              :label="child.name"
-              :value="child.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="同步码">
-          <el-input
-            v-model="syncCode"
-            type="textarea"
-            :rows="3"
-            :autosize="{ minRows: 3, maxRows: 4 }"
-            style="word-break: break-all; width: 100%;"
-            :placeholder="selectedChildId ? '点击生成同步码或输入收到的同步码' : '请先选择要同步的儿童'"
+  <!-- 同步数据弹窗 -->
+  <el-dialog
+    v-model="showSyncDialog"
+    title="数据同步"
+    width="90%"
+    class="sync-dialog"
+    :close-on-click-modal="false"
+  >
+    <el-form label-position="top">
+      <el-form-item label="选择儿童">
+        <el-select v-model="selectedChildId" placeholder="请选择要同步的儿童" style="width: 100%">
+          <el-option
+            v-for="child in children"
+            :key="child.id"
+            :label="child.name"
+            :value="child.id"
           />
-          <div class="sync-tip" v-if="syncCode">
-            提示：同步码包含了选中儿童的所有生长记录数据
-          </div>
-        </el-form-item>
-        <div class="sync-actions">
-          <el-button type="primary" @click="handleSync" :disabled="!selectedChildId">
-            <el-icon><Upload /></el-icon>生成同步码
-          </el-button>
-          <el-button type="primary" @click="copySyncCode" :disabled="!syncCode">
-            <el-icon><Link /></el-icon>复制同步码
-          </el-button>
-          <el-button type="success" @click="handleImportSync" :disabled="!syncCode">
-            <el-icon><Download /></el-icon>导入同步码
-          </el-button>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="同步码">
+        <el-input
+          v-model="syncCode"
+          type="textarea"
+          :rows="3"
+          :autosize="{ minRows: 3, maxRows: 4 }"
+          style="word-break: break-all; width: 100%;"
+          :placeholder="selectedChildId ? '点击生成同步码或输入收到的同步码' : '请先选择要同步的儿童'"
+        />
+        <div class="sync-tip" v-if="syncCode">
+          提示：同步码包含了选中儿童的所有生长记录数据
         </div>
-      </el-form>
-    </el-dialog>
-
-    <el-dialog
-      v-model="showAboutDialog"
-      title="关于"
-      width="90%"
-      class="about-dialog"
-    >
-      <div class="about-content">
-        <p class="version">版本号：1.0.0</p>
-        <p class="author">作者：fxlt</p>
+      </el-form-item>
+      <div class="sync-actions">
+        <el-button type="primary" @click="handleSync" :disabled="!selectedChildId">
+          <el-icon><Upload /></el-icon>生成同步码
+        </el-button>
+        <el-button type="primary" @click="copySyncCode" :disabled="!syncCode">
+          <el-icon><Link /></el-icon>复制同步码
+        </el-button>
+        <el-button type="success" @click="handleImportSync" :disabled="!syncCode">
+          <el-icon><Download /></el-icon>导入同步码
+        </el-button>
       </div>
-    </el-dialog>
-  </div>
+    </el-form>
+  </el-dialog>
+
+  <!-- 关于弹窗 -->
+  <el-dialog
+    v-model="showAboutDialog"
+    title="关于"
+    width="90%"
+    class="about-dialog"
+  >
+    <div class="about-content">
+      <p class="version">版本号：1.0.0</p>
+      <p class="author">作者：fxlt</p>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup>
@@ -256,6 +267,7 @@ const children = computed(() => childrenStore.children)
 const hasChildren = computed(() => childrenStore.hasChildren)
 const currentChildId = computed(() => childrenStore.currentChildId)
 
+const showMainDialog = ref(false)
 const showAddDialog = ref(false)
 const isEditing = ref(false)
 const editingChildId = ref(null)
@@ -451,7 +463,7 @@ onMounted(async () => {
 
 <style scoped>
 .settings-container {
-  padding: 0;
+  padding: 1rem;
   margin: 0;
   width: 100%;
   box-sizing: border-box;
@@ -460,7 +472,7 @@ onMounted(async () => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  gap: 1rem;
 }
 
 .settings-header {
@@ -469,6 +481,13 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
   border-bottom: 1px solid #EBEEF5;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border-radius: 8px;
+}
+
+.settings-header:hover {
+  background-color: #F6F6FB;
 }
 
 .center-title {
@@ -832,5 +851,14 @@ onMounted(async () => {
 
 :deep(.el-input-number) {
   width: 100%;
+}
+
+/* 添加主弹窗的样式 */
+.main-dialog {
+  :deep(.el-dialog__body) {
+    padding: 1rem;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
 }
 </style>
