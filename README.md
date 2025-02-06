@@ -1,6 +1,6 @@
 # GrowApp - 儿童生长记录应用
 
-GrowApp 是一个帮助家长记录和追踪儿童生长发育数据的移动应用。它提供了直观的数据可视化和便捷的记录管理功能。
+GrowApp 是一个帮助家长记录和追踪儿童生长发育数据的移动应用。它提供了直观的数据可视化和便捷的记录管理功能，并可通过 **Capacitor** 打包生成 APK 安装到 Android 设备进行使用。
 
 ## 技术栈
 
@@ -22,7 +22,7 @@ src/
 ├── stores/                 # 状态管理
 │   ├── children.js        # 儿童信息存储
 │   ├── records.js         # 生长记录存储
-│   └── sync.js           # 数据同步管理
+│   └── sync.js            # 数据同步管理
 ├── utils/                  # 工具函数
 │   ├── dateUtils.js       # 日期处理工具
 │   ├── dateFormat.js      # 日期格式化
@@ -59,6 +59,14 @@ src/
 - 响应式设计
 - 简洁直观的操作界面
 - 中文本地化支持
+
+## 新增布局与导航栏说明
+
+- **固定底部导航**  
+  在移动端，项目默认将导航栏 (`<el-footer>`) 固定在屏幕底部，类似于常见的 App "Tab Bar" 设计。若页面内容较少导致底部出现大面积空白，可通过以下方式减少空白：  
+  1. 移除或覆盖多余的 `margin-bottom` 等外边距。  
+  2. 在内容不足时，增加"空状态"插画或提示，保证界面美观度。  
+  3. 如果希望导航栏随页面滚动，可去掉 `position: fixed;`，并在 `.el-main` 中使用 `flex: 1` 做自适应布局。
 
 ## 主要文件说明
 
@@ -103,10 +111,12 @@ npm run test
 ```bash
 ./build-and-install.ps1
 ```
+> 该脚本会执行单元测试、前端构建、同步到 `android` 工程并最终生成并安装 APK。  
+> 在非 Windows 系统下可手动执行 `npm run build` → `npx cap sync android` → `cd android && ./gradlew assembleDebug && adb install -r app/build/outputs/apk/debug/app-debug.apk`。
 
 ## 测试覆盖
 
-项目包含完整的单元测试，覆盖了以下方面：
+本项目包含完整的单元测试，覆盖了以下方面：
 - 组件渲染和交互
 - 数据存储和管理
 - 工具函数功能
