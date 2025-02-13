@@ -142,6 +142,37 @@ const updateChartData = () => {
 const updateChartOptions = () => {
   const currentConfig = chartConfigStore.config[chartType.value]
 
+  // 获取WHO标准数据并处理
+  const whoData = chartConfigStore.whoStandardsData?.[chartType.value]?.[currentChild.value.gender] || []
+  const whoSeries = []
+
+  if (currentConfig.showWHOStandards && whoData.length > 0) {
+    const percentiles = ['p3', 'p15', 'p50', 'p85', 'p97']
+    const percentileNames = {
+      p3: '3rd',
+      p15: '15th',
+      p50: '50th',
+      p85: '85th',
+      p97: '97th'
+    }
+
+    percentiles.forEach(percentile => {
+      if (currentConfig.whoStandardsConfig[`show${percentile.toUpperCase()}`]) {
+        whoSeries.push({
+          name: `WHO ${percentileNames[percentile]} Percentile`,
+          type: 'line',
+          smooth: true,
+          showSymbol: false,
+          data: whoData.map(item => [item.ageInMonths / 12, item[percentile]]),
+          lineStyle: {
+            ...currentConfig.whoStandardsConfig.lineStyle,
+            color: currentConfig.whoStandardsConfig.colors[percentile]
+          }
+        })
+      }
+    })
+  }
+
   chartOptions.value = {
     animation: false,
     tooltip: {
@@ -195,7 +226,9 @@ const updateChartOptions = () => {
         }
       }
     },
-    series: [{
+    series: [
+        ...whoSeries,
+        {
       name: chartType.value === 'height' ? '身高' : '体重',
       type: 'line',
       smooth: true,
@@ -288,6 +321,7 @@ const initChart = () => {
 onMounted(async () => {
   try {
     await chartConfigStore.loadFromLocal()
+    await chartConfigStore.loadWHOStandards()
     registerComponents()
     initChart()
     
