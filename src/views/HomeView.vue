@@ -56,7 +56,8 @@ import {
   TooltipComponent,
   GridComponent,
   TimelineComponent,
-  DataZoomComponent
+  DataZoomComponent,
+  LegendComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { formatDate, calculateAge, calculateAgeText } from '../utils/dateUtils'
@@ -141,28 +142,30 @@ const updateChartData = () => {
 
 const updateChartOptions = () => {
   const currentConfig = chartConfigStore.config[chartType.value]
+  console.log('[Chart] 开始更新图表配置', { chartType: chartType.value, currentConfig })
 
   // 获取WHO标准数据并处理
   const whoData = chartConfigStore.whoStandardsData?.[chartType.value]?.[currentChild.value.gender] || []
   const whoSeries = []
+  console.log('[Chart] WHO标准数据', { whoDataLength: whoData.length, gender: currentChild.value.gender })
 
-  if (currentConfig.showWHOStandards && whoData.length > 0) {
-    const percentiles = ['p3', 'p15', 'p50', 'p85', 'p97']
+  if (whoData.length > 0) {
+    const percentiles = ['p3', 'p50', 'p97']
     const percentileNames = {
-      p3: '3rd',
-      p15: '15th',
-      p50: '50th',
-      p85: '85th',
-      p97: '97th'
+      p3: '3%',
+      p50: '50%',
+      p97: '97%'
     }
 
     percentiles.forEach(percentile => {
       if (currentConfig.whoStandardsConfig[`show${percentile.toUpperCase()}`]) {
+        console.log('[Chart] 添加百分位线', { percentile })
         whoSeries.push({
-          name: `WHO ${percentileNames[percentile]} Percentile`,
+          name: `${percentileNames[percentile]}`,
           type: 'line',
           smooth: true,
           showSymbol: false,
+          legendHoverLink: true,
           data: whoData.map(item => [item.ageInMonths / 12, item[percentile]]),
           lineStyle: {
             ...currentConfig.whoStandardsConfig.lineStyle,
@@ -173,8 +176,33 @@ const updateChartOptions = () => {
     })
   }
 
+  console.log('[Chart] 图例配置', {
+    legendCount: whoSeries.length,
+    legendNames: whoSeries.map(s => s.name)
+  })
+
   chartOptions.value = {
     animation: false,
+    legend: {
+      show: true,
+      type: 'plain',
+      orient: 'vertical',
+      right: '2%',
+      top: 'middle',
+      textStyle: {
+        color: '#2F2F38',
+        fontSize: 12,
+        lineHeight: 14
+      },
+      itemWidth: 20,
+      itemHeight: 12,
+      itemGap: 6,
+      padding: [3, 3],
+      backgroundColor: 'transparent',
+      borderRadius: 4,
+      z: 100,
+      selectedMode: false
+    },
     tooltip: {
       trigger: 'axis',
       formatter: function (params) {
@@ -195,8 +223,8 @@ const updateChartOptions = () => {
     },
     grid: {
       left: '10%',
-      right: '5%',
-      top: 20,
+      right: '10%',
+      top: 30,
       bottom: '15%',
       containLabel: true
     },
@@ -227,8 +255,8 @@ const updateChartOptions = () => {
       }
     },
     series: [
-        ...whoSeries,
-        {
+      ...whoSeries,
+      {
       name: chartType.value === 'height' ? '身高' : '体重',
       type: 'line',
       smooth: true,
@@ -263,6 +291,11 @@ const updateChartOptions = () => {
     replaceMerge: ['series', 'xAxis', 'yAxis'],
     lazyUpdate: true
   })
+  console.log('[Chart] 图表选项已更新', {
+    hasLegend: !!chartOptions.value.legend,
+    legendData: chartOptions.value.legend.data,
+    seriesCount: chartOptions.value.series.length
+  })
 }
 
 // 确保组件正确注册
@@ -273,6 +306,7 @@ const registerComponents = () => {
     GridComponent,
     TimelineComponent,
     DataZoomComponent,
+    LegendComponent,
     LineChart,
     CanvasRenderer
   ])
@@ -292,11 +326,16 @@ const handleChildChange = async (childId) => {
 
 // 初始化图表
 const initChart = () => {
+  console.log('[Chart] 开始初始化图表')
   if (chart) {
+    console.log('[Chart] 清理旧图表实例')
     chart.dispose()
   }
   
-  if (!chartRef.value) return
+  if (!chartRef.value) {
+    console.warn('[Chart] 图表容器未就绪')
+    return
+  }
   
   chart = echarts.init(chartRef.value, null, {
     renderer: 'canvas',
@@ -307,6 +346,7 @@ const initChart = () => {
     animation: false,
     dataZoom: getDataZoomConfig()
   }, true)
+  console.log('[Chart] 图表实例创建完成')
 
   chart.on('datazoom', function () {
     const currentTime = Date.now()
@@ -425,6 +465,11 @@ watch(() => childrenStore.currentChildId, (newId) => {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  overflow: visible;
+  min-width: 320px;
 }
 
 .chart-header {
@@ -495,6 +540,9 @@ watch(() => childrenStore.currentChildId, (newId) => {
   width: 100%;
   min-height: clamp(250px, 50vh, 500px);
   position: relative;
+  z-index: 1;
+  overflow: visible;
+  margin-right: 0;
 }
 
 :deep(.el-descriptions) {
@@ -598,6 +646,29 @@ watch(() => childrenStore.currentChildId, (newId) => {
 :deep(.child-select .el-input__wrapper.is-focus) {
   border-color: #807CA5;
   box-shadow: 0 0 0 1px #807CA5;
+}
+
+/* 添加图例样式 */
+:deep(.echarts-legend) {
+  background: transparent !important;
+  
+  .legend-item {
+    margin: 5px 0;
+    display: flex;
+    align-items: center;
+    
+    .legend-marker {
+      width: 25px;
+      height: 14px;
+      margin-right: 8px;
+    }
+    
+    .legend-text {
+      font-size: 12px;
+      line-height: 14px;
+      color: #2F2F38;
+    }
+  }
 }
 </style>
 
